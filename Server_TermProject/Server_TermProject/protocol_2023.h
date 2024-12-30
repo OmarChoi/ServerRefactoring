@@ -27,6 +27,12 @@ constexpr char SC_LOGIN_OK = 7;
 constexpr char SC_LOGIN_FAIL = 8;
 constexpr char SC_STAT_CHANGE = 9;
 
+enum PacketType
+{
+	LogInPacket,
+
+};
+
 #pragma pack (push, 1)
 struct CS_LOGIN_PACKET {
 	unsigned short size;

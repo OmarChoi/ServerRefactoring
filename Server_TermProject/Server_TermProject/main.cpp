@@ -2,13 +2,12 @@
 #include "GameObject.h"
 #include "Timer.h"
 #include "DataBase.h"
+#include "NetworkManager.h"
 
-HANDLE g_hIocp;
-SOCKET g_serverSocket, g_clientSocket;
-OVER_EXP g_over;
 Timer g_Timer;
 DataBase g_DataBase;
 
+NetworkManager g_NetworkManager;
 array<Player*, MAX_USER> Players;
 array<NPC*, MAX_NPC> NPCs;
 mutex g_playerLock;
@@ -22,7 +21,7 @@ void WorkerThread()
 		DWORD num_bytes;
 		ULONG_PTR key;
 		WSAOVERLAPPED* over = nullptr;
-		BOOL ret = GetQueuedCompletionStatus(g_hIocp, &num_bytes, &key, &over, INFINITE);
+		BOOL ret = GetQueuedCompletionStatus(g_NetworkManager.m_hIocp, &num_bytes, &key, &over, INFINITE);
 		OVER_EXP* ex_over = reinterpret_cast<OVER_EXP*>(over);
 		if (FALSE == ret) 
 		{
@@ -48,34 +47,7 @@ void WorkerThread()
 		{
 			case OP_ACCEPT:
 			{
-				Player* tempPlayer = new Player;
-				if(tempPlayer->m_objectID == -1)
-				{
-					// MaxUser °¡µæÂü
-					cout << "Max user exceeded.\n";
-				}
-				else
-				{
-					tempPlayer->m_playerState = CT_ALLOC;
-					tempPlayer->m_xPos = 0;
-					tempPlayer->m_yPos = 0;
-					tempPlayer->m_name[NAME_SIZE] = 0;
-					tempPlayer->m_prevRemain = 0;
-					tempPlayer->m_socket = g_clientSocket;
-					CreateIoCompletionPort(reinterpret_cast<HANDLE>(g_clientSocket), g_hIocp, tempPlayer->m_objectID, 0);
-					{
-						g_playerLock.lock();
-						Players[tempPlayer->m_objectID] = tempPlayer;
-						g_playerLock.unlock();
-					}
-					g_clientSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
-					Players[tempPlayer->m_objectID]->callRecv();
-
-
-				}
-				ZeroMemory(&g_over.m_over, sizeof(g_over.m_over));
-				int addr_size = sizeof(SOCKADDR_IN);
-				AcceptEx(g_serverSocket, g_clientSocket, g_over.m_sendBuf, 0, addr_size + 16, addr_size + 16, 0, &g_over.m_over);
+				g_NetworkManager.Accept();
 				break;
 			}
 			case OP_RECV:
@@ -332,29 +304,12 @@ void ReadMap()
 
 int main()
 {
-	WSADATA WSAData;
-	WSAStartup(MAKEWORD(2, 2), &WSAData);
-	g_serverSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
-	SOCKADDR_IN server_addr;
-	memset(&server_addr, 0, sizeof(server_addr));
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(PORT_NUM);
-	server_addr.sin_addr.S_un.S_addr = INADDR_ANY;
-	bind(g_serverSocket, reinterpret_cast<sockaddr*>(&server_addr), sizeof(server_addr));
-	listen(g_serverSocket, SOMAXCONN);
-	SOCKADDR_IN cl_addr;
-	int addr_size = sizeof(cl_addr);
+	g_NetworkManager.Init();
+	// ReadMap();
+	// InitializeNPC();
+	// g_DataBase.InitalizeDB();
 
-	ReadMap();
-	InitializeNPC();
-	g_DataBase.InitalizeDB();
-
-	g_hIocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
-	CreateIoCompletionPort(reinterpret_cast<HANDLE>(g_serverSocket), g_hIocp, 9999, 0);
-	g_clientSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
-	g_over.m_compType = OP_ACCEPT;
-	AcceptEx(g_serverSocket, g_clientSocket, g_over.m_sendBuf, 0, addr_size + 16, addr_size + 16, 0, &g_over.m_over);
-
+	cout << "Init Network. \n";
 	thread timer_thread{ TimerThread };
 	vector <thread> worker_threads;
 	int num_threads = std::thread::hardware_concurrency();
@@ -365,8 +320,6 @@ int main()
 	for (auto& th : worker_threads)
 		th.join();
 
-
 	timer_thread.join();
-	closesocket(g_serverSocket);
 	WSACleanup();
 }

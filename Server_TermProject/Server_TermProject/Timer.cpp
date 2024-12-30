@@ -1,7 +1,8 @@
 #include "stdafx.h"
 #include "Timer.h"
+#include "NetworkManager.h"
 
-extern HANDLE g_hIocp;
+extern NetworkManager g_NetworkManager;
 
 void Timer::AddTimer(int objId, chrono::system_clock::time_point timerPoint, TIMER_TYPE timerEvent)
 {
@@ -26,19 +27,19 @@ void Timer::ProcessTimer()
 			{
 			case TT_MOVE:
 				exover->m_compType = OP_NPC_MOVE;
-				PostQueuedCompletionStatus(g_hIocp, 1, ev.m_objId, &exover->m_over);
+				PostQueuedCompletionStatus(g_NetworkManager.m_hIocp, 1, ev.m_objId, &exover->m_over);
 				break;
 			case TT_ATTACK:
 				exover->m_compType = OP_NPC_ATTACK;
-				PostQueuedCompletionStatus(g_hIocp, 1, ev.m_objId, &exover->m_over);
+				PostQueuedCompletionStatus(g_NetworkManager.m_hIocp, 1, ev.m_objId, &exover->m_over);
 				break;
 			case TT_RESPAWN:
 				exover->m_compType = OP_NPC_RESPAWN;
-				PostQueuedCompletionStatus(g_hIocp, 1, ev.m_objId, &exover->m_over);
+				PostQueuedCompletionStatus(g_NetworkManager.m_hIocp, 1, ev.m_objId, &exover->m_over);
 				break;
 			case TT_SAVE:
 				exover->m_compType = OP_SAVE_DATA;
-				PostQueuedCompletionStatus(g_hIocp, 1, ev.m_objId, &exover->m_over);
+				PostQueuedCompletionStatus(g_NetworkManager.m_hIocp, 1, ev.m_objId, &exover->m_over);
 				break;
 			}
 			continue;

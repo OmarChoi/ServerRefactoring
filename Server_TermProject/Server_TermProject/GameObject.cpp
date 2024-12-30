@@ -101,13 +101,9 @@ bool GameObject::CanHit(int objID, OBJ_TYPE ot)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-Player::Player()
+Player::Player(int objID)
 {
-	static int playerCount = 0;
-	if (playerCount < MAX_USER)
-		m_objectID = playerCount++;
-	else
-		m_objectID = -1;
+	m_objectID = objID;
 
 	m_playerState = CT_FREE;
 	m_socket = 0;

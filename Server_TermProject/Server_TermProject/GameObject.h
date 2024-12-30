@@ -44,7 +44,7 @@ public:
 public:
 	int								m_exp;
 public:
-	Player();
+	Player(int objID = -1);
 	~Player() {}
 
 	void ProcessPacket(char* packet);
