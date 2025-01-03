@@ -1,17 +1,23 @@
 #pragma once
+#include "Creature.h"
+
 class PlayerSocketHandler;
-class PlayerSession
+class PlayerSession : public Creature
 {
 private:
-	OVER_EXP						m_recvOver;
-	SOCKET							m_socket;
-
-	int								m_remainPacket;
-	PlayerSocketHandler*			m_pSocket;
+	string m_userName;
+	int m_exp;
+	int m_level;
 public:
-	PlayerSession() = delete;
-	PlayerSession(SOCKET socket) : m_socket(socket) {};
+	PlayerSession() {};
 	~PlayerSession() {};
+
+	void SetName(string userName) { m_userName = userName; }
+	string GetName() { return m_userName; }
+	void SetExp(int exp) { m_exp = exp; }
+	int GetExp() { return m_exp; }
+	void SetLevel(int level) { m_level = level; }
+	int GetLevel() { return m_level; }
 
 private:
 	void Init();

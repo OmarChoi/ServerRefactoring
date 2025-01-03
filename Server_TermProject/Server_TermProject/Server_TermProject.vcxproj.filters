@@ -13,8 +13,17 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Player">
+    <Filter Include="Manager">
+      <UniqueIdentifier>{83760e7e-458b-41f1-9fa8-0a9bd97fbbac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Creature">
+      <UniqueIdentifier>{ebb36e6e-0f41-4695-84e0-e3754048c512}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Creature\Player">
       <UniqueIdentifier>{c4573c86-6b0c-4395-8ae0-9ecab4dc1e87}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Creature\NPC">
+      <UniqueIdentifier>{a09ef625-3d95-4917-abd9-2ac95d21e8d6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -34,13 +43,22 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="PlayerSession.cpp">
-      <Filter>Player</Filter>
+      <Filter>Creature\Player</Filter>
     </ClCompile>
     <ClCompile Include="PlayerSocketHandler.cpp">
-      <Filter>Player</Filter>
+      <Filter>Creature\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Manager.cpp">
+      <Filter>Manager</Filter>
     </ClCompile>
     <ClCompile Include="NetworkManager.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="GameManager.cpp">
+      <Filter>Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="Creature.cpp">
+      <Filter>Creature</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -58,13 +76,22 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="PlayerSocketHandler.h">
-      <Filter>Player</Filter>
+      <Filter>Creature\Player</Filter>
     </ClInclude>
     <ClInclude Include="PlayerSession.h">
-      <Filter>Player</Filter>
+      <Filter>Creature\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Manager.h">
+      <Filter>Manager</Filter>
     </ClInclude>
     <ClInclude Include="NetworkManager.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="GameManager.h">
+      <Filter>Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="Creature.h">
+      <Filter>Creature</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

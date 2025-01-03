@@ -73,7 +73,7 @@ struct SC_LOGIN_INFO_PACKET {
 	char	type;
 	int		id;
 	int		hp;
-	int		max_hp;
+	int		maxHp;
 	int		exp;
 	int		level;
 	short	x, y;

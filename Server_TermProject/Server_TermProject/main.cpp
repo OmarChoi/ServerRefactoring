@@ -1,13 +1,13 @@
 #include "stdafx.h"
-#include "GameObject.h"
 #include "Timer.h"
+#include "Manager.h"
 #include "DataBase.h"
+#include "GameObject.h"
 #include "NetworkManager.h"
 
 Timer g_Timer;
 DataBase g_DataBase;
 
-NetworkManager g_NetworkManager;
 array<Player*, MAX_USER> Players;
 array<NPC*, MAX_NPC> NPCs;
 mutex g_playerLock;
@@ -16,12 +16,13 @@ int g_MapData[W_WIDTH][W_HEIGHT];
 
 void WorkerThread()
 {
+	Manager& manager = Manager::GetInstance();
 	while (true) 
 	{
 		DWORD num_bytes;
 		ULONG_PTR key;
 		WSAOVERLAPPED* over = nullptr;
-		BOOL ret = GetQueuedCompletionStatus(g_NetworkManager.m_hIocp, &num_bytes, &key, &over, INFINITE);
+		BOOL ret = GetQueuedCompletionStatus(manager.GetNetworkManager()->m_hIocp, &num_bytes, &key, &over, INFINITE);
 		OVER_EXP* ex_over = reinterpret_cast<OVER_EXP*>(over);
 		if (FALSE == ret) 
 		{
@@ -36,42 +37,19 @@ void WorkerThread()
 			}
 		}
 
-		if ((0 == num_bytes) && ((ex_over->m_compType == OP_RECV) || (ex_over->m_compType == OP_SEND))) 
-		{
-			// disconnect(static_cast<int>(key));
-			if (ex_over->m_compType == OP_SEND) delete ex_over;
-			continue;
-		}
-
+		cout << "Current Op : " << ex_over->m_compType << endl;
+		cout << "Current Key : " << key << endl;
 		switch (ex_over->m_compType) 
 		{
 			case OP_ACCEPT:
 			{
-				g_NetworkManager.Accept();
+				manager.GetNetworkManager()->Accept();
 				break;
 			}
 			case OP_RECV:
 			{
-				int remainData = num_bytes + Players[key]->m_prevRemain;
-				char* p = ex_over->m_sendBuf;
-				while (remainData > 1)
-				{
-					unsigned short packetsize = *(reinterpret_cast<unsigned short*>(p));
-					if (remainData >= packetsize)
-					{
-						Players[key]->ProcessPacket(p);
-						p = p + packetsize;
-						remainData = remainData - packetsize;
-					}
-					else
-						break;
-				}
-
-				Players[key]->m_prevRemain = remainData;
-				if (remainData)
-					memcpy(ex_over->m_sendBuf, p, remainData);
-
-				Players[key]->callRecv();
+				cout << "OP_RECV Excute \n";
+				manager.GetNetworkManager()->Recv(num_bytes, ex_over, key);
 				break;
 			}
 			case OP_SEND:
@@ -304,11 +282,11 @@ void ReadMap()
 
 int main()
 {
-	g_NetworkManager.Init();
 	// ReadMap();
 	// InitializeNPC();
 	// g_DataBase.InitalizeDB();
-
+	Manager& manager = Manager::GetInstance();
+	
 	cout << "Init Network. \n";
 	thread timer_thread{ TimerThread };
 	vector <thread> worker_threads;

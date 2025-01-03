@@ -228,7 +228,7 @@ void ProcessPacket(char* ptr)
 		g_myid = packet->id;
 		avatar.id = g_myid;
 		avatar.move(packet->x, packet->y);
-		avatar.m_maxHP = packet->max_hp;
+		avatar.m_maxHP = packet->maxHp;
 		avatar.m_exp = packet->exp;
 		avatar.m_hp = packet->hp;
 		avatar.m_level = packet->level;

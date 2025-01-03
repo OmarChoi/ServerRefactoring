@@ -400,7 +400,6 @@ void Player::send_login_info_packet()
 	sendPacket.type = SC_LOGIN_INFO;
 	sendPacket.id = m_objectID;
 	sendPacket.hp = m_hp;
-	sendPacket.max_hp = m_maxHp;
 	sendPacket.exp = m_exp;
 	sendPacket.level = m_level;
 	sendPacket.x = m_xPos;

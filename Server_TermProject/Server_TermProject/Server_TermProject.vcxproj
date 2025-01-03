@@ -131,9 +131,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Creature.cpp" />
     <ClCompile Include="DataBase.cpp" />
+    <ClCompile Include="GameManager.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Manager.cpp" />
     <ClCompile Include="NetworkManager.cpp" />
     <ClCompile Include="PlayerSession.cpp" />
     <ClCompile Include="PlayerSocketHandler.cpp" />
@@ -146,8 +149,11 @@
     <ClCompile Include="Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Creature.h" />
     <ClInclude Include="DataBase.h" />
+    <ClInclude Include="GameManager.h" />
     <ClInclude Include="GameObject.h" />
+    <ClInclude Include="Manager.h" />
     <ClInclude Include="NetworkManager.h" />
     <ClInclude Include="PlayerSession.h" />
     <ClInclude Include="PlayerSocketHandler.h" />

@@ -74,6 +74,14 @@ enum CHAT_TYPE : char
 	CHATTING_MESSAGE
 };
 
+struct Position
+{
+	int yPos;
+	int xPos;
+
+	Position(int y, int x) : yPos(y), xPos(x) {};
+};
+
 class OVER_EXP {
 public:
 	WSAOVERLAPPED m_over;

@@ -1,15 +1,24 @@
 #include "stdafx.h"
-#include "NetworkManager.h"
+#include "Manager.h"
 #include "GameObject.h"
+#include "NetworkManager.h"
 #include "PlayerSocketHandler.h"
-
-NetworkManager::NetworkManager()
-{
-
-}
 
 NetworkManager::~NetworkManager()
 {
+	if (m_ppPlayerSocketHandler != nullptr) 
+	{
+		for (int i = 0; i < MAX_USER; ++i) 
+		{
+			if (m_ppPlayerSocketHandler[i] != nullptr) 
+			{
+				delete m_ppPlayerSocketHandler[i];
+				m_ppPlayerSocketHandler[i] = nullptr;
+			}
+		}
+		delete[] m_ppPlayerSocketHandler;
+		m_ppPlayerSocketHandler = nullptr;
+	}
 	closesocket(m_listenSocket);
 }
 
@@ -35,7 +44,7 @@ void NetworkManager::Init()
 	
 	// 한개의 CompletionPort 생성
 	m_hIocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
-	CreateIoCompletionPort(reinterpret_cast<HANDLE>(m_listenSocket), m_hIocp, 9999, 0);
+	CreateIoCompletionPort(reinterpret_cast<HANDLE>(m_listenSocket), m_hIocp, MAX_USER + 1, 0);
 
 	// 클라이언트를 수신하기 위한 소켓 설정
 	m_clientSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
@@ -47,17 +56,16 @@ void NetworkManager::Init()
 
 void NetworkManager::Accept()
 {
-	if (m_nClient < MAX_USER)
+	Manager& manager = Manager::GetInstance();
+	int nPlayer = manager.GetPlayerNum();
+	if (nPlayer < MAX_USER)
 	{
-		m_nClient += 1;
-		Player* player = new Player;
-		player->m_playerState = CT_ALLOC;
-		m_ppPlayerSocketHandler[m_nClient]->SetSocket(m_clientSocket);
-		CreateIoCompletionPort(reinterpret_cast<HANDLE>(m_clientSocket), m_hIocp, m_nClient, 0);
+		m_ppPlayerSocketHandler[nPlayer] = new PlayerSocketHandler(m_clientSocket, nPlayer);
+		CreateIoCompletionPort(reinterpret_cast<HANDLE>(m_clientSocket), m_hIocp, nPlayer, 0);
+		m_ppPlayerSocketHandler[nPlayer]->CallRecv();
+		
 		m_clientSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
-		m_ppPlayerSocketHandler[m_nClient]->CallRecv();
-		// Players[tempPlayer->m_objectID] = player;
-		// Players[tempPlayer->m_objectID]->callRecv();
+		manager.AddPlayerIndex();
 	}
 	else
 	{
@@ -68,8 +76,7 @@ void NetworkManager::Accept()
 	AcceptEx(m_listenSocket, m_clientSocket, m_AcceptOver.m_sendBuf, 0, addrSize + 16, addrSize + 16, 0, &m_AcceptOver.m_over);
 }
 
-void NetworkManager::Recv()
+void NetworkManager::Recv(DWORD recvSize, OVER_EXP* over, int playerKey)
 {
-
+	m_ppPlayerSocketHandler[playerKey]->ProcessPacket(recvSize, over);
 }
-
