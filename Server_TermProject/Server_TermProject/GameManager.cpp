@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "MapSession.h"
 #include "GameManager.h"
 #include "PlayerSession.h"
 
@@ -21,6 +22,9 @@ GameManager::~GameManager()
 
 void GameManager::Init()
 {
+	if (m_mapSession == nullptr)
+		m_mapSession = new MapSession();
+
 	m_ppPlayerSession = new PlayerSession * [MAX_USER];
 	for (int i = 0; i < MAX_USER; ++i) 
 	{
@@ -44,4 +48,15 @@ void GameManager::AddPlayerSession(int playerId, string playerName, int yPos, in
 	m_ppPlayerSession[playerId]->SetMaxHp(maxHp);
 	m_ppPlayerSession[playerId]->SetExp(exp);
 	m_ppPlayerSession[playerId]->SetLevel(level);
+}
+
+bool GameManager::CanGo(Position pos)
+{
+	return m_mapSession->CanGo(pos);
+}
+
+bool GameManager::CanGo(int yPos, int xPos)
+{
+	Position pos{ yPos, xPos };
+	return m_mapSession->CanGo(pos);
 }

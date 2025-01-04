@@ -16,13 +16,22 @@
     <Filter Include="Manager">
       <UniqueIdentifier>{83760e7e-458b-41f1-9fa8-0a9bd97fbbac}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Creature">
+    <Filter Include="Manager\InGame">
+      <UniqueIdentifier>{57130fca-07ba-407b-8888-9e9cdc4ffe61}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Session">
+      <UniqueIdentifier>{5a083dac-3950-4cfd-a64e-7aec6c754b8f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Session\MapSession">
+      <UniqueIdentifier>{d2a05129-94f7-4e60-be56-5b858031bb0e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Session\Creature">
       <UniqueIdentifier>{ebb36e6e-0f41-4695-84e0-e3754048c512}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Creature\Player">
+    <Filter Include="Session\Creature\Player">
       <UniqueIdentifier>{c4573c86-6b0c-4395-8ae0-9ecab4dc1e87}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Creature\NPC">
+    <Filter Include="Session\Creature\NPC">
       <UniqueIdentifier>{a09ef625-3d95-4917-abd9-2ac95d21e8d6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -43,10 +52,10 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="PlayerSession.cpp">
-      <Filter>Creature\Player</Filter>
+      <Filter>Session\Creature\Player</Filter>
     </ClCompile>
     <ClCompile Include="PlayerSocketHandler.cpp">
-      <Filter>Creature\Player</Filter>
+      <Filter>Session\Creature\Player</Filter>
     </ClCompile>
     <ClCompile Include="Manager.cpp">
       <Filter>Manager</Filter>
@@ -54,11 +63,17 @@
     <ClCompile Include="NetworkManager.cpp">
       <Filter>Manager</Filter>
     </ClCompile>
-    <ClCompile Include="GameManager.cpp">
-      <Filter>Manager</Filter>
-    </ClCompile>
     <ClCompile Include="Creature.cpp">
-      <Filter>Creature</Filter>
+      <Filter>Session\Creature</Filter>
+    </ClCompile>
+    <ClCompile Include="GameManager.cpp">
+      <Filter>Manager\InGame</Filter>
+    </ClCompile>
+    <ClCompile Include="MapSession.cpp">
+      <Filter>Session\MapSession</Filter>
+    </ClCompile>
+    <ClCompile Include="Tile.cpp">
+      <Filter>Session\MapSession</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -76,10 +91,10 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="PlayerSocketHandler.h">
-      <Filter>Creature\Player</Filter>
+      <Filter>Session\Creature\Player</Filter>
     </ClInclude>
     <ClInclude Include="PlayerSession.h">
-      <Filter>Creature\Player</Filter>
+      <Filter>Session\Creature\Player</Filter>
     </ClInclude>
     <ClInclude Include="Manager.h">
       <Filter>Manager</Filter>
@@ -87,11 +102,17 @@
     <ClInclude Include="NetworkManager.h">
       <Filter>Manager</Filter>
     </ClInclude>
-    <ClInclude Include="GameManager.h">
-      <Filter>Manager</Filter>
-    </ClInclude>
     <ClInclude Include="Creature.h">
-      <Filter>Creature</Filter>
+      <Filter>Session\Creature</Filter>
+    </ClInclude>
+    <ClInclude Include="GameManager.h">
+      <Filter>Manager\InGame</Filter>
+    </ClInclude>
+    <ClInclude Include="MapSession.h">
+      <Filter>Session\MapSession</Filter>
+    </ClInclude>
+    <ClInclude Include="Tile.h">
+      <Filter>Session\MapSession</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

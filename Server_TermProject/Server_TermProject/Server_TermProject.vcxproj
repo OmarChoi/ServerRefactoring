@@ -137,6 +137,7 @@
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Manager.cpp" />
+    <ClCompile Include="MapSession.cpp" />
     <ClCompile Include="NetworkManager.cpp" />
     <ClCompile Include="PlayerSession.cpp" />
     <ClCompile Include="PlayerSocketHandler.cpp" />
@@ -146,6 +147,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Tile.cpp" />
     <ClCompile Include="Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -154,11 +156,13 @@
     <ClInclude Include="GameManager.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="Manager.h" />
+    <ClInclude Include="MapSession.h" />
     <ClInclude Include="NetworkManager.h" />
     <ClInclude Include="PlayerSession.h" />
     <ClInclude Include="PlayerSocketHandler.h" />
     <ClInclude Include="protocol_2023.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="Tile.h" />
     <ClInclude Include="Timer.h" />
   </ItemGroup>
   <ItemGroup>

@@ -1,9 +1,10 @@
 #include "stdafx.h"
-#include "GameObject.h"
-#include "DataBase.h"
 #include "Timer.h"
+#include "Manager.h"
+#include "GameManager.h"
+#include "DataBase.h"
+#include "GameObject.h"
 
-extern int g_MapData[W_WIDTH][W_HEIGHT];
 extern array<Player*, MAX_USER> Players;
 extern array<NPC*, MAX_NPC> NPCs;
 extern DataBase g_DataBase;
@@ -58,9 +59,11 @@ GameObject::~GameObject()
 
 bool GameObject::CanGo(int x, int y)
 {
+	Manager& manager = Manager::GetInstance();
+
 	if (x < 0 || x >= W_WIDTH) return false;
 	if (y < 0 || y >= W_HEIGHT) return false;
-	return g_MapData[x][y] != 0;
+	return manager.GetGameManager()->CanGo(y, x);
 }
 
 void GameObject::AddViewList(int objID)
@@ -606,6 +609,7 @@ int MaxLength(pair<int, int> current, pair<int, int> destination) {
 
 void NPC::TrackingPath(pair<int, int> start)
 {
+	Manager& manager = Manager::GetInstance();
 	int rows = W_WIDTH;
 	int cols = W_HEIGHT;
 
@@ -645,7 +649,8 @@ void NPC::TrackingPath(pair<int, int> start)
 			int neighbor_y = current_point.second + movement.second;
 
 			// 갈 수 있는 길인지 확인하고 갈 수 있으면 해당 칸 점수 +
-			if (neighbor_x >= 0 && neighbor_x < rows && neighbor_y >= 0 && neighbor_y < cols && g_MapData[neighbor_x][neighbor_y] != 0) {
+			if (neighbor_x >= 0 && neighbor_x < rows && neighbor_y >= 0 && neighbor_y < cols 
+				&& manager.GetGameManager()->CanGo(neighbor_y, neighbor_x) != 0) {
 				pair<int, int> neighbor = { neighbor_x, neighbor_y };
 				double tentative_g_score = g_score[current_point.first][current_point.second] + 1;
 

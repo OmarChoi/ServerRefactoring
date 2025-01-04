@@ -11,7 +11,7 @@ private:
 
 public:
 	HANDLE				m_hIocp;
-	NetworkManager() {};
+	NetworkManager() { Init(); }
 	~NetworkManager();
 
 	void Init();

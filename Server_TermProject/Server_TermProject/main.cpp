@@ -12,8 +12,6 @@ array<Player*, MAX_USER> Players;
 array<NPC*, MAX_NPC> NPCs;
 mutex g_playerLock;
 
-int g_MapData[W_WIDTH][W_HEIGHT];
-
 void WorkerThread()
 {
 	Manager& manager = Manager::GetInstance();
@@ -260,29 +258,8 @@ void InitializeNPC()
 	std::cout << "NPC initialize end.\n";
 }
 
-void ReadMap()
-{
-	std::cout << "Map intialize begin.\n";
-	ifstream mapFile("map.txt");
-
-	int x = 0, y = 0;
-	char temp = ' ';
-	while (!mapFile.eof())
-	{
-		mapFile >> temp;
-		g_MapData[x++][y] = (int)(temp - 48);
-		if (x == W_WIDTH) 
-		{
-			y += 1;
-			x = 0;
-		}
-	}
-	std::cout << "Map intialize end.\n";
-}
-
 int main()
 {
-	// ReadMap();
 	// InitializeNPC();
 	// g_DataBase.InitalizeDB();
 	Manager& manager = Manager::GetInstance();

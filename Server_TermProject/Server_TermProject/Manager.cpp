@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "Manager.h"
-#include "NetworkManager.h"
 #include "GameManager.h"
+#include "NetworkManager.h"
 
 Manager::Manager()
 {
@@ -18,14 +18,8 @@ Manager::~Manager()
 
 void Manager::Init()
 {
-	if (networkManager == nullptr)
-	{
-		networkManager = new NetworkManager();
-		networkManager->Init();
-	}
 	if (gameManager == nullptr)
-	{
 		gameManager = new GameManager();
-		gameManager->Init();
-	}
+	if (networkManager == nullptr)
+		networkManager = new NetworkManager();
 }
