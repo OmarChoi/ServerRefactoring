@@ -14,6 +14,7 @@
 #include <locale.h>
 #include <fstream>
 #include <stack>
+#include <algorithm>
 #include <concurrent_unordered_set.h>
 #include <concurrent_priority_queue.h>
 
@@ -28,6 +29,7 @@ using namespace std;
 
 constexpr int VIEW_RANGE = 8;
 
+#undef max
 #define stressTest
 
 enum COMP_TYPE 

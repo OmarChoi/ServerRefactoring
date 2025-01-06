@@ -2,12 +2,10 @@
 #include "Timer.h"
 #include "Manager.h"
 #include "GameManager.h"
-#include "DataBase.h"
 #include "GameObject.h"
 
 extern array<Player*, MAX_USER> Players;
 extern array<NPC*, MAX_NPC> NPCs;
-extern DataBase g_DataBase;
 extern Timer g_Timer;
 
 void DisconnectClient(int objID)

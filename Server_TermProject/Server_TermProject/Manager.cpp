@@ -2,6 +2,7 @@
 #include "Manager.h"
 #include "GameManager.h"
 #include "NetworkManager.h"
+#include "DataBaseManager.h"
 
 Manager::Manager()
 {
@@ -14,6 +15,8 @@ Manager::~Manager()
 		delete networkManager;
 	if (gameManager != nullptr)
 		delete gameManager;
+	if (databaseManager != nullptr)
+		delete databaseManager;
 }
 
 void Manager::Init()
@@ -22,4 +25,6 @@ void Manager::Init()
 		gameManager = new GameManager();
 	if (networkManager == nullptr)
 		networkManager = new NetworkManager();
+	if (databaseManager == nullptr)
+		databaseManager = new DataBaseManager();
 }

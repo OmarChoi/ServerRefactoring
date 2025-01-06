@@ -27,7 +27,7 @@ MapSession::~MapSession()
 
 void MapSession::Init()
 {
-	std::cout << "Map intialize begin.\n";
+	cout << "Initiate Map initialization.\n";
 	ifstream mapFile("map.txt");
 	// 0 : 장애물
 	// 1 : 갈 수 있는 지역
@@ -48,7 +48,7 @@ void MapSession::Init()
 			x = 0;
 		}
 	}
-	std::cout << "Map intialize end.\n";
+	cout << "Map initialization complete.\n";
 }
 
 bool MapSession::CanGo(const Position pos)

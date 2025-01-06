@@ -19,7 +19,7 @@ public:
 	void ProcessPacket(DWORD recvSize, OVER_EXP* over);
 
 private:
-	void VerifyUserAccount(const string userName);
+	void VerifyUserAccount(const char* userName);
 
 	void SendPacket(void* packet);
 	void send_add_object_packet(int objId);
@@ -29,7 +29,7 @@ private:
 	void send_npc_move_object_packet(int objId);
 	void send_chat_packet(int objId, const char* mess, char chatType);
 
-	void send_login_info_packet();
+	void send_login_info_packet(const PlayerSession* pPlayer);
 	void send_login_ok_packet();
 	void send_login_fail_packet();
 	void send_stat_change_packet();

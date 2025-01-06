@@ -1,12 +1,11 @@
 #include "stdafx.h"
 #include "Timer.h"
 #include "Manager.h"
-#include "DataBase.h"
 #include "GameObject.h"
 #include "NetworkManager.h"
+#include "DataBaseManager.h"
 
 Timer g_Timer;
-DataBase g_DataBase;
 
 array<Player*, MAX_USER> Players;
 array<NPC*, MAX_NPC> NPCs;
@@ -35,8 +34,6 @@ void WorkerThread()
 			}
 		}
 
-		cout << "Current Op : " << ex_over->m_compType << endl;
-		cout << "Current Key : " << key << endl;
 		switch (ex_over->m_compType) 
 		{
 			case OP_ACCEPT:
@@ -46,7 +43,6 @@ void WorkerThread()
 			}
 			case OP_RECV:
 			{
-				cout << "OP_RECV Excute \n";
 				manager.GetNetworkManager()->Recv(num_bytes, ex_over, key);
 				break;
 			}
@@ -85,7 +81,7 @@ void WorkerThread()
 				{
 					if (Players[i] == nullptr) continue;
 					if (Players[i]->m_playerState != CT_INGAME) continue;
-					g_DataBase.UpdatePlayerData(Players[i]->m_nameForDB, i);
+					manager.GetDataBaseManager()->UpdatePlayerData(Players[i]->m_nameForDB, i);
 				}
 				g_Timer.AddTimer(99999, chrono::system_clock::now() + 60s, TT_SAVE);
 				if (ex_over != NULL)
@@ -263,8 +259,6 @@ int main()
 	// InitializeNPC();
 	// g_DataBase.InitalizeDB();
 	Manager& manager = Manager::GetInstance();
-	
-	cout << "Init Network. \n";
 	thread timer_thread{ TimerThread };
 	vector <thread> worker_threads;
 	int num_threads = std::thread::hardware_concurrency();

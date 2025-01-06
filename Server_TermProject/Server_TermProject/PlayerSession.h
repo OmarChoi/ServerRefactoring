@@ -13,11 +13,11 @@ public:
 	~PlayerSession() {};
 
 	void SetName(string userName) { m_userName = userName; }
-	string GetName() { return m_userName; }
+	string GetName() const { return m_userName; }
 	void SetExp(int exp) { m_exp = exp; }
-	int GetExp() { return m_exp; }
+	int GetExp() const { return m_exp; }
 	void SetLevel(int level) { m_level = level; }
-	int GetLevel() { return m_level; }
+	int GetLevel() const { return m_level; }
 
 private:
 	void Init();

@@ -24,6 +24,7 @@ NetworkManager::~NetworkManager()
 
 void NetworkManager::Init()
 {
+	cout << "Initiate network initialization.\n";
 	WSAStartup(MAKEWORD(2, 2), &m_WSAData);
 
 	// 클라이언트 수신을 대기하는 Listner 소켓 생성
@@ -52,6 +53,8 @@ void NetworkManager::Init()
 	// 클라이언트가 접속할 수 있게 Accept 설정
 	m_AcceptOver.m_compType = OP_ACCEPT;
 	AcceptEx(m_listenSocket, m_clientSocket, m_AcceptOver.m_sendBuf, 0, addrSize + 16, addrSize + 16, 0, &m_AcceptOver.m_over);
+
+	cout << "Network initialization complete.\n";
 }
 
 void NetworkManager::Accept()

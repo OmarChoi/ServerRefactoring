@@ -2,6 +2,7 @@
 #include "Manager.h"
 #include "GameManager.h"
 #include "PlayerSession.h"
+#include "DataBaseManager.h"
 #include "PlayerSocketHandler.h"
 
 PlayerSocketHandler::PlayerSocketHandler() : m_socket(0), m_remainPacket(0)
@@ -52,36 +53,31 @@ void PlayerSocketHandler::ApplyPacketData(char* packet)
 		break;
 	}
 	default:
-		cout << "process something. \n";
+		cout << "process something.\n";
 	}
 }
 
-void PlayerSocketHandler::VerifyUserAccount(const string userName)
+void PlayerSocketHandler::VerifyUserAccount(const char* userName)
 {
-	
 	Manager& manager = Manager::GetInstance();
-	// Manager.DataBase에서 수신한 Player 정보를 통해 PlayerSession 추가
-	// DataBase::GetUserData(WCAHR* userName);
-	// 다음과 형태로 userInfo에 DB에 저장된 값을 받아올 수 있게 수정할 예정
-	send_login_ok_packet();
+	PlayerSession* player = manager.GetGameManager()->GetPlayerSession(m_playerID);
 
-	SC_LOGIN_INFO_PACKET userInfoPacket;
-	userInfoPacket.size = sizeof(SC_LOGIN_INFO_PACKET);
-	userInfoPacket.type = SC_LOGIN_INFO;
-	
-	// 추후 DataBase에서 추출한 값 사용
-	userInfoPacket.x = rand() % W_WIDTH;
-	userInfoPacket.y = rand() % W_HEIGHT;
-	userInfoPacket.hp = 100;
-	userInfoPacket.maxHp = 100;
-	userInfoPacket.exp = 0;
-	userInfoPacket.level = 1;
-	manager.GetGameManager()->AddPlayerSession(
-		m_playerID, userName, userInfoPacket.y, userInfoPacket.x, 
-		userInfoPacket.hp, userInfoPacket.maxHp, 
-		userInfoPacket.exp, userInfoPacket.level
-	);
-	SendPacket(&userInfoPacket);
+	// 함수로 따로 분리해줄 필요성을 느낌
+	WCHAR nameForDB[NAME_SIZE];
+	char name[NAME_SIZE];
+	strncpy_s(name, userName, NAME_SIZE);
+	MultiByteToWideChar(CP_UTF8, 0, userName, -1, nameForDB, NAME_SIZE);
+
+	player->SetName(userName);
+	if (manager.GetDataBaseManager()->GetUserData(nameForDB, player) == false)
+	{
+		ZeroMemory(player, sizeof(PlayerSession));
+		send_login_fail_packet();
+		return;
+	}
+	send_login_ok_packet();
+	send_login_info_packet(player);
+	manager.GetDataBaseManager()->UpdatePlayerData(nameForDB, m_playerID);
 }
 
 void PlayerSocketHandler::SendPacket(void* packet)
@@ -91,11 +87,18 @@ void PlayerSocketHandler::SendPacket(void* packet)
 	WSASend(m_socket, &sendData->m_wsabuf, 1, 0, 0, &sendData->m_over, 0);
 }
 
-void PlayerSocketHandler::send_login_info_packet()
+void PlayerSocketHandler::send_login_info_packet(const PlayerSession* pPlayer)
 {
 	SC_LOGIN_INFO_PACKET sendData;
 	sendData.size = sizeof(SC_LOGIN_INFO_PACKET);
 	sendData.type = SC_LOGIN_INFO;
+	sendData.id = m_playerID;
+	sendData.hp = pPlayer->GetHp();
+	sendData.maxHp = pPlayer->GetMaxHp();
+	sendData.exp = pPlayer->GetExp();
+	sendData.level = pPlayer->GetLevel();
+	sendData.x = pPlayer->GetPos().xPos;
+	sendData.y = pPlayer->GetPos().yPos;
 	SendPacket(&sendData);
 }
 

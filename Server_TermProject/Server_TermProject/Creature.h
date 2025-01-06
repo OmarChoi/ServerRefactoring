@@ -13,13 +13,13 @@ public:
 	Creature();
 
 	void SetPos(int y, int x) { m_pos.yPos = y; m_pos.xPos = x; }
-	Position GetPos() { return m_pos; }
+	Position GetPos() const { return m_pos; }
 
 	void SetHp(float hp) { m_hp = hp; }
-	float GetHp() { return m_hp; }
+	float GetHp() const { return m_hp; }
 	
 	void SetMaxHp(float maxHp) { m_maxHp = maxHp; }
-	float GetMaxHp() { return m_maxHp; }
+	float GetMaxHp() const { return m_maxHp; }
 
 private:
 

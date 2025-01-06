@@ -1,6 +1,7 @@
 #pragma once
-class NetworkManager;
 class GameManager;
+class NetworkManager;
+class DataBaseManager;
 
 class Manager
 {
@@ -26,10 +27,12 @@ private:
 private:
 	NetworkManager*			networkManager;
 	GameManager*			gameManager;
+	DataBaseManager*		databaseManager;
 
 public:
 	NetworkManager* const GetNetworkManager() { return networkManager; }
 	GameManager* const  GetGameManager() { return gameManager; }
+	DataBaseManager* const  GetDataBaseManager() { return databaseManager; }
 
 	const int GetPlayerNum() { return m_nCurrentPlayer; }
 	void AddPlayerIndex() { m_nCurrentPlayer += 1; }
