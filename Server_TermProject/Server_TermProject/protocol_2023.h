@@ -3,12 +3,14 @@ constexpr int NAME_SIZE = 20;
 constexpr int CHAT_SIZE = 200;
 
 constexpr int MAX_USER = 100000;
-constexpr int MAX_NPC = 200000;
+constexpr int MAX_NPC = 200'000;
 
 constexpr int W_WIDTH = 2000;
 constexpr int W_HEIGHT = 2000;
 
 constexpr int BUF_SIZE = 2048;
+
+constexpr int MOVE_DIRECTION = 4;
 
 // Packet ID
 constexpr char CS_LOGIN = 0;
@@ -43,7 +45,7 @@ struct CS_LOGIN_PACKET {
 struct CS_MOVE_PACKET {
 	unsigned short size;
 	char	type;
-	char	direction;  // 0 : UP, 1 : DOWN, 2 : LEFT, 3 : RIGHT
+	char	direction;  // 0 : UP, 1 : RIGHT, 2 : DOWN, 3 : LEFT
 	unsigned	move_time;
 };
 

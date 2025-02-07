@@ -21,6 +21,9 @@ Manager::~Manager()
 
 void Manager::Init()
 {
+	static std::random_device rd;
+	m_Gen.seed(rd());
+
 	if (gameManager == nullptr)
 		gameManager = new GameManager();
 	if (networkManager == nullptr)

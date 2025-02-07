@@ -19,6 +19,7 @@ NetworkManager::~NetworkManager()
 		delete[] m_ppPlayerSocketHandler;
 		m_ppPlayerSocketHandler = nullptr;
 	}
+	cout << "Close Socket" << endl;
 	closesocket(m_listenSocket);
 }
 
@@ -61,19 +62,24 @@ void NetworkManager::Accept()
 {
 	Manager& manager = Manager::GetInstance();
 	int nPlayer = manager.GetPlayerNum();
+	SOCKET newSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
+
 	if (nPlayer < MAX_USER)
 	{
 		m_ppPlayerSocketHandler[nPlayer] = new PlayerSocketHandler(m_clientSocket, nPlayer);
 		CreateIoCompletionPort(reinterpret_cast<HANDLE>(m_clientSocket), m_hIocp, nPlayer, 0);
 		m_ppPlayerSocketHandler[nPlayer]->CallRecv();
-		
-		m_clientSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
+
 		manager.AddPlayerIndex();
+		m_clientSocket = newSocket;
 	}
 	else
 	{
 		cout << "Max user exceeded.\n";
+		closesocket(newSocket); 
+		return;
 	}
+
 	ZeroMemory(&m_AcceptOver.m_over, sizeof(m_AcceptOver.m_over));
 	int addrSize = sizeof(SOCKADDR_IN);
 	AcceptEx(m_listenSocket, m_clientSocket, m_AcceptOver.m_sendBuf, 0, addrSize + 16, addrSize + 16, 0, &m_AcceptOver.m_over);

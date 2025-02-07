@@ -1,6 +1,9 @@
 #pragma once
+#define NOMINMAX
 #include <iostream>
 #include <array>
+#include <map>
+#include <unordered_map>
 #include <WS2tcpip.h>
 #include <MSWSock.h>
 #include <thread>
@@ -14,6 +17,7 @@
 #include <locale.h>
 #include <fstream>
 #include <stack>
+#include <random>
 #include <algorithm>
 #include <concurrent_unordered_set.h>
 #include <concurrent_priority_queue.h>
@@ -29,7 +33,6 @@ using namespace std;
 
 constexpr int VIEW_RANGE = 8;
 
-#undef max
 #define stressTest
 
 enum COMP_TYPE 
@@ -64,6 +67,14 @@ enum C_STATE
 	CT_INGAME 
 };
 
+enum STATE
+{
+	IDLE,
+	MOVE,
+	ATTACK,
+	DIE,
+};
+
 enum OBJ_TYPE
 {
 	OT_PLAYER = 0,
@@ -81,7 +92,47 @@ struct Position
 	int yPos;
 	int xPos;
 
+	Position() : yPos(0), xPos(0) {};
 	Position(int y, int x) : yPos(y), xPos(x) {};
+
+	bool operator == (const Position& other)
+	{
+		return yPos == other.yPos && xPos == other.xPos;
+	}
+
+	bool operator != (const Position& other)
+	{
+		return !(*this == other);
+	}
+
+	Position operator + (const Position& other) 
+	{
+		Position sumPos;
+		sumPos.yPos = yPos + other.yPos;
+		sumPos.xPos = xPos + other.xPos;
+		return sumPos;
+	}
+
+	Position& operator += (const Position& other)
+	{
+		yPos = yPos + other.yPos;
+		xPos = xPos + other.xPos;		
+		return *this;
+	}
+
+	bool operator < (const Position& other) const
+	{
+		if (yPos == other.yPos)
+			return xPos < other.xPos;
+		return yPos < other.yPos;
+	}
+};
+
+const array<Position, MOVE_DIRECTION> movements = {
+	Position {-1, 0},		// UP 
+	Position {0, 1},		// RIGHT,
+	Position {1, 0},		// Down
+	Position {0, -1}		// LEFT
 };
 
 class OVER_EXP {

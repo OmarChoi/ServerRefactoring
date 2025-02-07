@@ -36,4 +36,8 @@ public:
 
 	const int GetPlayerNum() { return m_nCurrentPlayer; }
 	void AddPlayerIndex() { m_nCurrentPlayer += 1; }
+
+
+public:
+	std::mt19937 m_Gen;
 };

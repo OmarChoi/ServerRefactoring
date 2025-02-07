@@ -53,10 +53,13 @@ void MapSession::Init()
 
 bool MapSession::CanGo(const Position pos)
 {
+	if (pos.yPos < 0 || pos.yPos >= W_HEIGHT) return false;
+	if (pos.xPos < 0 || pos.xPos >= W_WIDTH) return false;
 	return m_tiles[pos.yPos][pos.xPos]->CanGo();
 }
 
 int MapSession::GetCost(const Position pos)
 {
+	if (CanGo(pos) == false) return INT_MAX;
 	return m_tiles[pos.yPos][pos.xPos]->GetCost();
 }

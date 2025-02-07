@@ -505,16 +505,16 @@ int main()
 				int a = 0;
 				switch (event.key.code) {
 				case sf::Keyboard::Left:
-					direction = 2;
+					direction = 3;
 					break;
 				case sf::Keyboard::Right:
-					direction = 3;
+					direction = 1;
 					break;
 				case sf::Keyboard::Up:
 					direction = 0;
 					break;
 				case sf::Keyboard::Down:
-					direction = 1;
+					direction = 2;
 					break;
 				case sf::Keyboard::A:
 				{

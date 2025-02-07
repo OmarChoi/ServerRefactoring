@@ -75,6 +75,9 @@
     <ClCompile Include="DataBaseManager.cpp">
       <Filter>Manager</Filter>
     </ClCompile>
+    <ClCompile Include="NpcSession.cpp">
+      <Filter>Session\Creature\NPC</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -113,6 +116,9 @@
     </ClInclude>
     <ClInclude Include="DataBaseManager.h">
       <Filter>Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="NpcSession.h">
+      <Filter>Session\Creature\NPC</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

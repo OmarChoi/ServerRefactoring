@@ -1,7 +1,10 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
+#include <omp.h>
 #include "Timer.h"
 #include "Manager.h"
 #include "GameObject.h"
+#include "NpcSession.h"
+#include "GameManager.h"
 #include "NetworkManager.h"
 #include "DataBaseManager.h"
 
@@ -10,6 +13,8 @@ Timer g_Timer;
 array<Player*, MAX_USER> Players;
 array<NPC*, MAX_NPC> NPCs;
 mutex g_playerLock;
+
+constexpr int SafeZoneSize = 10;
 
 void WorkerThread()
 {
@@ -34,63 +39,57 @@ void WorkerThread()
 			}
 		}
 
-		switch (ex_over->m_compType) 
+		switch (ex_over->m_compType)
 		{
-			case OP_ACCEPT:
-			{
-				manager.GetNetworkManager()->Accept();
-				break;
-			}
-			case OP_RECV:
-			{
-				manager.GetNetworkManager()->Recv(num_bytes, ex_over, key);
-				break;
-			}
-			case OP_SEND:
-			{
+		case OP_ACCEPT:
+		{
+			manager.GetNetworkManager()->Accept();
+			break;
+		}
+		case OP_RECV:
+		{
+			manager.GetNetworkManager()->Recv(num_bytes, ex_over, key);
+			break;
+		}
+		case OP_SEND:
+		{
+			delete ex_over;
+			break;
+		}
+		case OP_NPC_MOVE:
+		{
+			NpcSession* npc = manager.GetGameManager()->GetNpcSession(static_cast<int>(key));
+			npc->Move();
+			if (ex_over != NULL)
 				delete ex_over;
-				break;
-			}
-			case OP_NPC_MOVE:
-			{
-				if (NPCs[static_cast<int>(key)]->m_isActive == false) return;
-				NPCs[static_cast<int>(key)]->Move();
-				if(ex_over != NULL)
-					delete ex_over;
-				break;
-			}
-			case OP_NPC_ATTACK:
-			{
-				if (NPCs[static_cast<int>(key)]->m_isActive == false) return;
-				NPCs[static_cast<int>(key)]->Attack();
-				if (ex_over != NULL)
-					delete ex_over;
-				break;
-			}
-			case OP_NPC_RESPAWN:
-			{
-				NPCs[static_cast<int>(key)]->m_isDead = false;
-				NPCs[static_cast<int>(key)]->UpdateViewList();
-				if (ex_over != NULL)
-					delete ex_over;
-				break;
-			}
-			case OP_SAVE_DATA:
-			{
-				for (int i = 0; i < MAX_USER; ++i)
-				{
-					if (Players[i] == nullptr) continue;
-					if (Players[i]->m_playerState != CT_INGAME) continue;
-					manager.GetDataBaseManager()->UpdatePlayerData(Players[i]->m_nameForDB, i);
-				}
-				g_Timer.AddTimer(99999, chrono::system_clock::now() + 60s, TT_SAVE);
-				if (ex_over != NULL)
-					delete ex_over;
-				break;
-			}
-			default:
-				cout << "Error\n";
-				break;
+			break;
+		}
+		case OP_NPC_ATTACK:
+		{
+			NpcSession* npc = manager.GetGameManager()->GetNpcSession(static_cast<int>(key));
+			npc->Attack();
+			if (ex_over != NULL)
+				delete ex_over;
+			break;
+		}
+		case OP_NPC_RESPAWN:
+		{
+			NpcSession* npc = manager.GetGameManager()->GetNpcSession(static_cast<int>(key));
+			npc->Respawn();
+			if (ex_over != NULL)
+				delete ex_over;
+			break;
+		}
+		case OP_SAVE_DATA:
+		{
+			// GameManager에 존재하는 PlayerSession을 순회하여 플레이어 데이터 저장할 수 있는 함수 추가
+			// manager.GetDataBaseManager()->UpdatePlayerData();
+			g_Timer.AddTimer(99999, chrono::system_clock::now() + 60s, TT_SAVE);
+			break;
+		}
+		default:
+			cout << "Error\n";
+			break;
 		}
 	}
 }
@@ -153,119 +152,96 @@ int API_SendMessage(lua_State* L)
 	return 0;
 }
 
-int API_MoveStart(lua_State* L)
-{
-	int my_id = (int)lua_tointeger(L, -1);
-	lua_pop(L, 2);
-
-	TimerEvent ev{ my_id, chrono::system_clock::now() + 1s, TT_MOVE };
-	g_Timer.m_timerLock.lock();
-	g_Timer.m_timerQueue.push(ev);
-	g_Timer.m_timerLock.unlock();
-
-	return 0;
-}
-
-int API_NPCMove(lua_State* L)
-{
-	int my_id = (int)lua_tointeger(L, -2);
-	lua_pop(L, 2);
-
-	TimerEvent ev{ my_id, chrono::system_clock::now() + 1s, TT_MOVE };
-	g_Timer.m_timerLock.lock();
-	g_Timer.m_timerQueue.push(ev);
-	g_Timer.m_timerLock.unlock();
-
-	return 0;
-}
+//int API_MoveStart(lua_State* L)
+//{
+//	int my_id = (int)lua_tointeger(L, -1);
+//	lua_pop(L, 2);
+//
+//	TimerEvent ev{ my_id, chrono::system_clock::now() + 1s, TT_MOVE };
+//	g_Timer.m_timerLock.lock();
+//	g_Timer.m_timerQueue.push(ev);
+//	g_Timer.m_timerLock.unlock();
+//
+//	return 0;
+//}
+//
+//int API_NPCMove(lua_State* L)
+//{
+//	int my_id = (int)lua_tointeger(L, -2);
+//	lua_pop(L, 2);
+//
+//	TimerEvent ev{ my_id, chrono::system_clock::now() + 1s, TT_MOVE };
+//	g_Timer.m_timerLock.lock();
+//	g_Timer.m_timerQueue.push(ev);
+//	g_Timer.m_timerLock.unlock();
+//
+//	return 0;
+//}
 
 void InitializeNPC()
 {
-	std::cout << "NPC intialize begin.\n";
+	GameManager* gameManager = Manager::GetInstance().GetGameManager();
+	std::cout << "Initiate Npc Object initialization.\n";
 
-	for (int i = 0; i < MAX_NPC; ++i) {
+	int numThreads = std::thread::hardware_concurrency();
+	omp_set_num_threads(numThreads);  // 원하는 스레드 수로 설정
 
-		NPCs[i] = new NPC;
+#pragma omp parallel
+	{
+		std::random_device rd;
+		std::mt19937 rng(rd());
+		std::uniform_int_distribution<int> distX(0, W_WIDTH - 1);
+		std::uniform_int_distribution<int> distY(0, W_HEIGHT - 1);
 
-		// NPCs[i]->m_state = ST_INGAME;
-		auto L = NPCs[i]->m_luaState = luaL_newstate();	// ��� NPC�� ����ӽ� ����
-		luaL_openlibs(L);
-		luaL_loadfile(L, "npc.lua");
-		lua_pcall(L, 0, 0, 0);
-
-		lua_getglobal(L, "set_uid");
-		lua_pushnumber(L, i);
-		lua_pcall(L, 1, 0, 0);
-		// lua_pop(L, 1);// eliminate set_uid from stack after call
-
-		lua_register(L, "API_SendMessage", API_SendMessage);
-		lua_register(L, "API_MoveStart", API_MoveStart);
-		lua_register(L, "API_NPCMove", API_NPCMove);
-		lua_register(L, "API_get_player_x", API_get_player_x);
-		lua_register(L, "API_get_player_y", API_get_player_y);
-		lua_register(L, "API_get_npc_x", API_get_npc_x);
-		lua_register(L, "API_get_npc_y", API_get_npc_y);
-
-		NPCs[i]->m_objectID = i;
-		NPCs[i]->m_targetID = -1;
-		NPCs[i]->m_type = OT_NPC;
-		if (i >= MAX_NPC - MAX_NPC * 0.05)
+#pragma omp for schedule(dynamic) nowait
+		for (int i = 0; i < 200'00; ++i)
 		{
-			int minVal = W_WIDTH * 3 / 4;
-			int maxVal = W_WIDTH;
-			while (1)
-			{
-				NPCs[i]->m_xPos = rand() % (maxVal - minVal + 1) + minVal;
-				NPCs[i]->m_yPos = rand() % (maxVal - minVal + 1) + minVal;
-				if (NPCs[i]->m_xPos > 10 && NPCs[i]->m_yPos > 10)
-				{
-					if(NPCs[i]->CanGo(NPCs[i]->m_xPos, NPCs[i]->m_yPos))
-					{
-						NPCs[i]->m_spawnXPos = NPCs[i]->m_xPos;
-						NPCs[i]->m_spawnYPos = NPCs[i]->m_yPos;
-						break;
-					}
-				}
-			}
-			NPCs[i]->m_monserType = MT_ROAMING;
-			sprintf_s(NPCs[i]->m_name, "R_%d", i);
-		}
-		else
-		{
-			while (1)
-			{
-				NPCs[i]->m_xPos = rand() % W_WIDTH;
-				NPCs[i]->m_yPos = rand() % W_HEIGHT;
-				if (NPCs[i]->m_xPos > 10 && NPCs[i]->m_yPos > 10)
-				{
-					if (NPCs[i]->CanGo(NPCs[i]->m_xPos, NPCs[i]->m_yPos))
-					{
-						NPCs[i]->m_spawnXPos = NPCs[i]->m_xPos;
-						NPCs[i]->m_spawnYPos = NPCs[i]->m_yPos;
-						break;
-					}
-				}
-			}
-			sprintf_s(NPCs[i]->m_name, "S_%d", i);
-			NPCs[i]->m_monserType = MT_STAYING;
-		}
+			NpcSession* npc = gameManager->GetNpcSession(i);
 
+			auto L = npc->m_luaState = luaL_newstate();
+			luaL_openlibs(L);
+			luaL_loadfile(L, "npc.lua");
+			lua_pcall(L, 0, 0, 0);
+
+			lua_getglobal(L, "set_uid");
+			lua_pushnumber(L, i);
+			lua_pcall(L, 1, 0, 0);
+
+			// Lua API 등록
+			lua_register(L, "API_SendMessage", API_SendMessage);
+			// lua_register(L, "API_MoveStart", API_MoveStart);
+			// lua_register(L, "API_NPCMove", API_NPCMove);
+			lua_register(L, "API_get_player_x", API_get_player_x);
+			lua_register(L, "API_get_player_y", API_get_player_y);
+			lua_register(L, "API_get_npc_x", API_get_npc_x);
+			lua_register(L, "API_get_npc_y", API_get_npc_y);
+
+			npc->SetId(i);
+			npc->SetTarget(-1);
+			npc->SetName("Npc" + std::to_string(i));
+
+			int yPos, xPos;
+			do 
+			{
+				yPos = distY(rng);
+				xPos = distX(rng);
+			} while (yPos < SafeZoneSize && xPos < SafeZoneSize || !gameManager->CanGo(yPos, xPos));
+
+			npc->InitPosition({ yPos, xPos });
+		}
 	}
-	std::cout << "NPC initialize end.\n";
+	std::cout << "Npc Object initialization complete.\n";
 }
 
 int main()
 {
-	// InitializeNPC();
-	// g_DataBase.InitalizeDB();
 	Manager& manager = Manager::GetInstance();
-	thread timer_thread{ TimerThread };
+	InitializeNPC();
 	vector <thread> worker_threads;
 	int num_threads = std::thread::hardware_concurrency();
-
-	for (int i = 0; i < num_threads; ++i)
+	for (int i = 0; i < num_threads - 1; ++i)
 		worker_threads.emplace_back(WorkerThread);
-
+	thread timer_thread{ TimerThread };
 	for (auto& th : worker_threads)
 		th.join();
 

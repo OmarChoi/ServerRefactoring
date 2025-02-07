@@ -107,7 +107,8 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -123,7 +124,8 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -141,6 +143,7 @@
     <ClCompile Include="Manager.cpp" />
     <ClCompile Include="MapSession.cpp" />
     <ClCompile Include="NetworkManager.cpp" />
+    <ClCompile Include="NpcSession.cpp" />
     <ClCompile Include="PlayerSession.cpp" />
     <ClCompile Include="PlayerSocketHandler.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -160,6 +163,7 @@
     <ClInclude Include="Manager.h" />
     <ClInclude Include="MapSession.h" />
     <ClInclude Include="NetworkManager.h" />
+    <ClInclude Include="NpcSession.h" />
     <ClInclude Include="PlayerSession.h" />
     <ClInclude Include="PlayerSocketHandler.h" />
     <ClInclude Include="protocol_2023.h" />

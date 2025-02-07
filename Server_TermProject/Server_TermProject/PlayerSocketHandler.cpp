@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Manager.h"
+#include "NpcSession.h"
 #include "GameManager.h"
 #include "PlayerSession.h"
 #include "DataBaseManager.h"
@@ -45,11 +46,42 @@ void PlayerSocketHandler::ProcessPacket(DWORD recvDataSize, OVER_EXP* over)
 
 void PlayerSocketHandler::ApplyPacketData(char* packet)
 {
+	GameManager* gameManager = Manager::GetInstance().GetGameManager();
 	switch (packet[2]) {
 	case CS_LOGIN:
 	{
 		CS_LOGIN_PACKET* p = reinterpret_cast<CS_LOGIN_PACKET*>(packet);
 		VerifyUserAccount(p->name);
+		break;
+	}
+	case CS_MOVE:
+	{
+		CS_MOVE_PACKET* p = reinterpret_cast<CS_MOVE_PACKET*>(packet);
+		PlayerSession* player = gameManager->GetPlayerSession(m_playerID);
+		Position nextPos = player->GetPos() + movements[p->direction];
+		m_moveTime = p->move_time;
+		if (gameManager->CanGo(nextPos)) 
+		{
+			player->SetPos(nextPos);
+			player->UpdateViewList();
+			send_move_object_packet(player);
+		}
+		break;
+	}
+	case CS_CHAT:
+	{
+		break;
+	}
+	case CS_ATTACK:
+	{
+		break;
+	}
+	case CS_TELEPORT:
+	{
+		break;
+	}
+	case CS_LOGOUT:
+	{
 		break;
 	}
 	default:
@@ -65,6 +97,19 @@ void PlayerSocketHandler::VerifyUserAccount(const char* userName)
 	// 함수로 따로 분리해줄 필요성을 느낌
 	WCHAR nameForDB[NAME_SIZE];
 	char name[NAME_SIZE];
+	
+	if (strncmp(userName, "StressTest", 10) == 0)
+	{
+		player->SetName(userName);
+		player->SetObjId(m_playerID);
+		player->SetState(C_STATE::CT_INGAME);
+		player->SetRandomPos();
+		player->UpdateViewList();
+		
+		send_login_ok_packet();
+		send_login_info_packet(player);
+		return;
+	}
 	strncpy_s(name, userName, NAME_SIZE);
 	MultiByteToWideChar(CP_UTF8, 0, userName, -1, nameForDB, NAME_SIZE);
 
@@ -75,9 +120,11 @@ void PlayerSocketHandler::VerifyUserAccount(const char* userName)
 		send_login_fail_packet();
 		return;
 	}
+	player->SetState(C_STATE::CT_INGAME);
+	player->SetObjId(m_playerID);
+	player->UpdateViewList();
 	send_login_ok_packet();
 	send_login_info_packet(player);
-	manager.GetDataBaseManager()->UpdatePlayerData(nameForDB, m_playerID);
 }
 
 void PlayerSocketHandler::SendPacket(void* packet)
@@ -92,7 +139,7 @@ void PlayerSocketHandler::send_login_info_packet(const PlayerSession* pPlayer)
 	SC_LOGIN_INFO_PACKET sendData;
 	sendData.size = sizeof(SC_LOGIN_INFO_PACKET);
 	sendData.type = SC_LOGIN_INFO;
-	sendData.id = m_playerID;
+	sendData.id = pPlayer->GetId();
 	sendData.hp = pPlayer->GetHp();
 	sendData.maxHp = pPlayer->GetMaxHp();
 	sendData.exp = pPlayer->GetExp();
@@ -102,43 +149,69 @@ void PlayerSocketHandler::send_login_info_packet(const PlayerSession* pPlayer)
 	SendPacket(&sendData);
 }
 
-void PlayerSocketHandler::send_add_object_packet(int objId)
+void PlayerSocketHandler::send_add_object_packet(const PlayerSession* pPlayer)
 {
 	SC_ADD_OBJECT_PACKET sendData;
 	sendData.size = sizeof(SC_ADD_OBJECT_PACKET);
 	sendData.type = SC_ADD_OBJECT;
+	sendData.id = pPlayer->GetId();
+	sendData.x = pPlayer->GetPos().xPos;
+	sendData.y = pPlayer->GetPos().yPos;
+	strncpy_s(sendData.name, sizeof(sendData.name), pPlayer->GetName().c_str(), _TRUNCATE);
 	SendPacket(&sendData);
 }
 
-void PlayerSocketHandler::send_add_npc_packet(int objId)
+void PlayerSocketHandler::send_add_npc_packet(const NpcSession* pNpc)
 {
 	SC_ADD_OBJECT_PACKET sendData;
 	sendData.size = sizeof(SC_ADD_OBJECT_PACKET);
 	sendData.type = SC_ADD_OBJECT;
+	sendData.id = pNpc->GetId() + MAX_USER;
+	sendData.x = pNpc->GetPos().xPos;
+	sendData.y = pNpc->GetPos().yPos;
+	strncpy_s(sendData.name, sizeof(sendData.name), pNpc->GetName().c_str(), _TRUNCATE);
 	SendPacket(&sendData);
 }
 
-void PlayerSocketHandler::send_remove_object_packet(int objId)
+void PlayerSocketHandler::send_remove_object_packet(const PlayerSession* pPlayer)
 {
-	SC_REMOVE_OBJECT_PACKET sendData;
-	sendData.size = sizeof(SC_REMOVE_OBJECT_PACKET);
-	sendData.type = SC_REMOVE_OBJECT;
-	SendPacket(&sendData);
+	SC_REMOVE_OBJECT_PACKET sendPacket;
+	sendPacket.size = sizeof(SC_REMOVE_OBJECT_PACKET);
+	sendPacket.type = SC_REMOVE_OBJECT;
+	sendPacket.id = pPlayer->GetId();
+	SendPacket(&sendPacket);
 }
 
-void PlayerSocketHandler::send_move_object_packet(int objId)
+void PlayerSocketHandler::send_remove_npc_object_packet(const NpcSession* pNpc)
+{
+	SC_REMOVE_OBJECT_PACKET sendPacket;
+	sendPacket.size = sizeof(SC_REMOVE_OBJECT_PACKET);
+	sendPacket.type = SC_REMOVE_OBJECT;
+	sendPacket.id = pNpc->GetId() + MAX_USER;
+	SendPacket(&sendPacket);
+}
+
+void PlayerSocketHandler::send_move_object_packet(const PlayerSession* pPlayer)
 {
 	SC_MOVE_OBJECT_PACKET sendData;
 	sendData.size = sizeof(SC_MOVE_OBJECT_PACKET);
 	sendData.type = SC_MOVE_OBJECT;
+	sendData.id = pPlayer->GetId();
+	sendData.y = pPlayer->GetPos().yPos;
+	sendData.x = pPlayer->GetPos().xPos;
+	sendData.move_time = m_moveTime;
 	SendPacket(&sendData);
 }
 
-void PlayerSocketHandler::send_npc_move_object_packet(int objId)
+void PlayerSocketHandler::send_npc_move_object_packet(const NpcSession* pNpc)
 {
 	SC_MOVE_OBJECT_PACKET sendData;
 	sendData.size = sizeof(SC_MOVE_OBJECT_PACKET);
 	sendData.type = SC_MOVE_OBJECT;
+	sendData.id = pNpc->GetId() + MAX_USER;;
+	sendData.y = pNpc->GetPos().yPos;
+	sendData.x = pNpc->GetPos().xPos;
+	sendData.move_time = m_moveTime;
 	SendPacket(&sendData);
 }
 
