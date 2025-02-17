@@ -4,7 +4,9 @@ class Creature
 protected:
 	int					m_objectID;
 	string				m_name;
+	int					m_level;
 	float				m_hp, m_maxHp;
+	float				m_speed;
 	Position			m_pos;
 
 	unordered_set<int>				m_viewList;
@@ -34,8 +36,11 @@ public:
 	int GetId() const { return m_objectID; }
 	int GetMoveTime() const { return m_lastMoveTime.time_since_epoch().count(); }
 
-	void AddViewList(int objID);
-	void RemoveViewList(int objID);
+	void SetLevel(int level) { m_level = level; }
+	int GetLevel() const { return m_level; }
+
+	virtual void AddViewList(int objID);
+	virtual void RemoveViewList(int objID);
 
 	bool CanSee(const Creature* other);
 protected:

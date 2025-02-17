@@ -109,6 +109,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <OpenMPSupport>true</OpenMPSupport>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -126,6 +127,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <OpenMPSupport>true</OpenMPSupport>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -135,14 +137,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AgroNpc.cpp" />
     <ClCompile Include="Creature.cpp" />
     <ClCompile Include="DataBaseManager.cpp" />
     <ClCompile Include="GameManager.cpp" />
-    <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Manager.cpp" />
     <ClCompile Include="MapSession.cpp" />
     <ClCompile Include="NetworkManager.cpp" />
+    <ClCompile Include="NormalNpc.cpp" />
     <ClCompile Include="NpcSession.cpp" />
     <ClCompile Include="PlayerSession.cpp" />
     <ClCompile Include="PlayerSocketHandler.cpp" />
@@ -156,13 +159,14 @@
     <ClCompile Include="Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AgroNpc.h" />
     <ClInclude Include="Creature.h" />
     <ClInclude Include="DataBaseManager.h" />
     <ClInclude Include="GameManager.h" />
-    <ClInclude Include="GameObject.h" />
     <ClInclude Include="Manager.h" />
     <ClInclude Include="MapSession.h" />
     <ClInclude Include="NetworkManager.h" />
+    <ClInclude Include="NormalNpc.h" />
     <ClInclude Include="NpcSession.h" />
     <ClInclude Include="PlayerSession.h" />
     <ClInclude Include="PlayerSocketHandler.h" />

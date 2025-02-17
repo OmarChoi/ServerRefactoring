@@ -25,6 +25,9 @@
 #include "protocol_2023.h"
 #include "include/lua.hpp"
 
+// Sol2 is licensed under the MIT License
+#include "include/sol/sol.hpp"
+
 #pragma comment(lib, "WS2_32.lib")
 #pragma comment(lib, "MSWSock.lib")
 #pragma comment(lib, "lua54.lib")
@@ -32,32 +35,38 @@
 using namespace std;
 
 constexpr int VIEW_RANGE = 8;
+constexpr int SafeZoneSize = 10;
+inline thread_local std::mt19937 rng(std::random_device{}());
 
 #define stressTest
 
-enum COMP_TYPE 
+enum class COMP_TYPE
 { 
-	OP_ACCEPT, 
-	OP_RECV, 
-	OP_SEND, 
-	OP_NPC_MOVE,
-	OP_NPC_ATTACK,
-	OP_NPC_RESPAWN,
-	OP_SAVE_DATA
+	Accept, 
+	Recv, 
+	Send,
+	NpcUpdate,
+	SaveData
 };
 
-enum TIMER_TYPE 
+enum class TIMER_TYPE
 {
-	TT_MOVE,
-	TT_ATTACK,
-	TT_RESPAWN,
-	TT_SAVE
+	NpcUpdate,
+	SaveData
 };
 
-enum MONSTER_TYPE
+enum class MonsterType
 {
-	MT_STAYING,
-	MT_ROAMING
+	Unknown = 0,
+	Slime = 1,
+	Goblin = 2,
+	Orc = 3
+};
+
+enum class MonsterBehavior
+{
+	Normal = 0,
+	Agro = 1,
 };
 
 enum C_STATE 
@@ -67,7 +76,7 @@ enum C_STATE
 	CT_INGAME 
 };
 
-enum STATE
+enum class STATE
 {
 	IDLE,
 	MOVE,
@@ -145,7 +154,7 @@ public:
 	{
 		m_wsabuf.len = BUF_SIZE;
 		m_wsabuf.buf = m_sendBuf;
-		m_compType = OP_RECV;
+		m_compType = COMP_TYPE::Recv;
 		ZeroMemory(&m_over, sizeof(m_over));
 	}
 	OVER_EXP(char* packet)
@@ -153,7 +162,7 @@ public:
 		m_wsabuf.len = *(reinterpret_cast<unsigned short*>(packet));;
 		m_wsabuf.buf = m_sendBuf;
 		ZeroMemory(&m_over, sizeof(m_over));
-		m_compType = OP_SEND;
+		m_compType = COMP_TYPE::Send;
 		memcpy(m_sendBuf, packet, *(reinterpret_cast<unsigned short*>(packet)));
 	}
 };
@@ -168,3 +177,12 @@ struct TimerEvent
 		return (m_execTime > lValue.m_execTime);
 	}
 };
+
+namespace Utils
+{
+	inline int GetDist(Position startPos, Position destPos)
+	{
+		// 단순히 가로 거리 + 세로거리
+		return abs(destPos.yPos - startPos.yPos) + abs(destPos.xPos - startPos.xPos);
+	}
+}

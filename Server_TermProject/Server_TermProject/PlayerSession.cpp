@@ -12,8 +12,10 @@ void PlayerSession::SetRandomPos()
 	int yPos, xPos;
 	do
 	{
-		yPos = rand() % W_HEIGHT;
-		xPos = rand() % W_WIDTH;
+		std::uniform_int_distribution<int> distX(0, W_WIDTH - 1);
+		std::uniform_int_distribution<int> distY(0, W_HEIGHT - 1);
+		yPos = distY(rng);
+		xPos = distX(rng);
 	} while (manager.GetGameManager()->CanGo(yPos, xPos) == false);
 	SetPos(yPos, xPos);
 }
@@ -93,7 +95,6 @@ void PlayerSession::UpdateViewList()
 			if (prevNpcViewList.count(i) == 0) // 이전에는 없었으면 추가
 			{
 				npc->AddViewList(m_objectID);
-				npc->SetTarget(m_objectID);
 				myNetwork->send_add_npc_packet(npc);
 			}
 			newNpcViewList.emplace(i);

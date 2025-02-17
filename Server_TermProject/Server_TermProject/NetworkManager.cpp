@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "Manager.h"
-#include "GameObject.h"
 #include "NetworkManager.h"
 #include "PlayerSocketHandler.h"
 
@@ -36,7 +35,7 @@ void NetworkManager::Init()
 	serverAddress.sin_family = AF_INET;
 	serverAddress.sin_port = htons(PORT_NUM);
 	serverAddress.sin_addr.S_un.S_addr = INADDR_ANY;
-	bind(m_listenSocket, reinterpret_cast<sockaddr*>(&serverAddress), sizeof(serverAddress));
+	::bind(m_listenSocket, reinterpret_cast<sockaddr*>(&serverAddress), sizeof(serverAddress));
 	listen(m_listenSocket, SOMAXCONN);
 
 	SOCKADDR_IN clientAddress;
@@ -52,8 +51,8 @@ void NetworkManager::Init()
 	m_clientSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
 
 	// 클라이언트가 접속할 수 있게 Accept 설정
-	m_AcceptOver.m_compType = OP_ACCEPT;
-	AcceptEx(m_listenSocket, m_clientSocket, m_AcceptOver.m_sendBuf, 0, addrSize + 16, addrSize + 16, 0, &m_AcceptOver.m_over);
+	m_AcceptOver.m_compType = COMP_TYPE::Accept;
+	::AcceptEx(m_listenSocket, m_clientSocket, m_AcceptOver.m_sendBuf, 0, addrSize + 16, addrSize + 16, 0, &m_AcceptOver.m_over);
 
 	cout << "Network initialization complete.\n";
 }

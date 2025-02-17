@@ -34,6 +34,9 @@
     <Filter Include="Session\Creature\NPC">
       <UniqueIdentifier>{a09ef625-3d95-4917-abd9-2ac95d21e8d6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Session\Creature\NPC\NpcType">
+      <UniqueIdentifier>{6065901d-acdf-4f9a-8363-b8e94c98fba8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -43,9 +46,6 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Timer.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="GameObject.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="PlayerSession.cpp">
@@ -78,15 +78,18 @@
     <ClCompile Include="NpcSession.cpp">
       <Filter>Session\Creature\NPC</Filter>
     </ClCompile>
+    <ClCompile Include="AgroNpc.cpp">
+      <Filter>Session\Creature\NPC\NpcType</Filter>
+    </ClCompile>
+    <ClCompile Include="NormalNpc.cpp">
+      <Filter>Session\Creature\NPC\NpcType</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Timer.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="GameObject.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="protocol_2023.h" />
@@ -119,6 +122,12 @@
     </ClInclude>
     <ClInclude Include="NpcSession.h">
       <Filter>Session\Creature\NPC</Filter>
+    </ClInclude>
+    <ClInclude Include="AgroNpc.h">
+      <Filter>Session\Creature\NPC\NpcType</Filter>
+    </ClInclude>
+    <ClInclude Include="NormalNpc.h">
+      <Filter>Session\Creature\NPC\NpcType</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -28,20 +28,12 @@ void Timer::ProcessTimer()
 			OVER_EXP* exover = new OVER_EXP;
 			switch (ev.m_Type)
 			{
-			case TT_MOVE:
-				exover->m_compType = OP_NPC_MOVE;
+			case TIMER_TYPE::NpcUpdate:
+				exover->m_compType = COMP_TYPE::NpcUpdate;
 				PostQueuedCompletionStatus(iocpObject, 1, ev.m_objId, &exover->m_over);
 				break;
-			case TT_ATTACK:
-				exover->m_compType = OP_NPC_ATTACK;
-				PostQueuedCompletionStatus(iocpObject, 1, ev.m_objId, &exover->m_over);
-				break;
-			case TT_RESPAWN:
-				exover->m_compType = OP_NPC_RESPAWN;
-				PostQueuedCompletionStatus(iocpObject, 1, ev.m_objId, &exover->m_over);
-				break;
-			case TT_SAVE:
-				exover->m_compType = OP_SAVE_DATA;
+			case TIMER_TYPE::SaveData:
+				exover->m_compType = COMP_TYPE::SaveData;
 				PostQueuedCompletionStatus(iocpObject, 1, ev.m_objId, &exover->m_over);
 				break;
 			}

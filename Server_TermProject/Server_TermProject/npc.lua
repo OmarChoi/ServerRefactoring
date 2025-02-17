@@ -1,31 +1,63 @@
 myid = 99999;
 move_count = 0;
 
-function set_info(x, type)
-    myid = x;
-    -- id, type, x, y, hp, level, 
-    API_SetInfo(myid);
+MonsterType = {
+    Unknown = 0,
+    Slime = 1,
+    Goblin = 2,
+    Orc = 3
+}
+
+MonsterBehavior = {
+    Normal = 0,
+    Agro = 1,
+}
+
+MonsterInfo = {
+    [MonsterType.Slime] = {
+        type = MonsterType.Slime, behavior = MonsterBehavior.Normal, level = 1,
+        hp = 100.0, damage = 10, attackRange = 1, speed = 0.8
+    },
+    [MonsterType.Goblin] = {
+        type = MonsterType.Goblin, behavior = MonsterBehavior.Agro, level = 10,
+        hp = 200.0, damage = 20, attackRange = 1, speed = 1.2
+    },
+    [MonsterType.Orc] = {
+        type = MonsterType.Orc, behavior = MonsterBehavior.Agro, level = 20,
+        hp = 300.0, damage = 30, attackRange = 2, speed = 1.0
+    }
+}
+
+function GetDistance(x1, y1, x2, y2)
+    local dx = x1 - x2
+    local dy = y1 - y2
+    return math.sqrt(dx * dx + dy * dy)
 end
 
-function Event_Get_Hit(player)
-   player_x = API_get_player_x(player);
-   player_y = API_get_player_y(player);
-   my_x = API_get_npc_x(myid);
-   my_y = API_get_npc_y(myid);
-   if (math.abs(player_x - my_x) + math.abs(player_y - my_y) > 1 then
-      if (player_y == my_y) then
-         API_MoveStart(myid);
-         API_SendMessage(myid, player, "HELLO");
-      end
-   end
+function GetMonsterInfo(monsterType)
+    return MonsterInfo[monsterType] 
+        or { type = MonsterType.Unknown, behavior = MonsterBehavior.Normal, 
+        level = -1, hp = -1.0, damage = -1, attackRange = -1, speed = -1 }
 end
 
-function event_npc_move_away(player)
-    move_count = move_count + 1;
-    if(move_count > 2) then
-        move_count = 0
-		API_SendMessage(myid, player, "BYE")
+function ActivateNpc(monster, distance)
+    if monster.behavior == MonsterBehavior.Normal then
+        return monster.hp < monster.maxHp
+    elseif monster.type == MonsterBehavior.Agro then
+        return distance <= monster.viewRange
     else
-		API_NPCMove(myid, 1)
-	end
+        return false
+    end
+end
+
+function OnUpdate(hasTarget, distance, attackRange)
+    if hasTarget then
+        if distance <= attackRange then     
+            Attack()
+        else
+            ChaseTarget()
+        end
+    else
+        MoveRandom()
+    end
 end

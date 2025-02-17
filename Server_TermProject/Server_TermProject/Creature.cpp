@@ -19,8 +19,6 @@ void Creature::SetPos(int y, int x)
 	}
 	m_lastMoveTime = chrono::high_resolution_clock::now();
 	m_pos.yPos = y; m_pos.xPos = x;
-
-	UpdateViewList();
 }
 
 void Creature::AddViewList(int objID)

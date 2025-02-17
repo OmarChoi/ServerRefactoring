@@ -9,6 +9,7 @@ private:
 	MapSession* m_mapSession;
 	PlayerSession** m_ppPlayerSession;
 	NpcSession** m_ppNpcSession;
+	mutex		mapMutex;
 public:
 	// NPCSession
 	
@@ -22,8 +23,8 @@ public:
 	PlayerSession* GetPlayerSession(int pId) { return m_ppPlayerSession[pId]; }
 	NpcSession* GetNpcSession(int objId) { return m_ppNpcSession[objId]; }
 
-	bool CanGo(Position pos);
-	bool CanGo(int yPos, int xPos);
+	bool CanGo(Position pos) const;
+	bool CanGo(int yPos, int xPos) const;
 	int GetTileCost(Position pos);
 };
 

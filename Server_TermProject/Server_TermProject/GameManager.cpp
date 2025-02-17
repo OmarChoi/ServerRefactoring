@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include <omp.h>
 #include "MapSession.h"
 #include "NpcSession.h"
 #include "GameManager.h"
@@ -33,12 +34,36 @@ void GameManager::Init()
 		m_ppPlayerSession[i]->SetObjId(i);
 	}
 
+
 	m_ppNpcSession = new NpcSession * [MAX_NPC];
-	for (int i = 0; i < MAX_NPC; ++i)
+	std::cout << "Initiate Npc Object initialization.\n";
+
+	int numThreads = std::thread::hardware_concurrency();
+	omp_set_num_threads(numThreads);
+
+#pragma omp parallel
 	{
-		m_ppNpcSession[i] = new RoamingMonster();
-		m_ppNpcSession[i]->SetObjId(i);
+		std::uniform_int_distribution<int> distX(0, W_WIDTH - 1);
+		std::uniform_int_distribution<int> distY(0, W_HEIGHT - 1);
+
+#pragma omp for schedule(dynamic) nowait
+		for (int i = 0; i < MAX_NPC; ++i)
+		{
+			std::uniform_int_distribution<int> monsterType(0, 3);
+			m_ppNpcSession[i] = NpcFactory::CreateNpc(static_cast<MonsterType>(monsterType(rng)));
+			m_ppNpcSession[i]->SetObjId(i);
+			int yPos, xPos;
+
+			do
+			{
+				yPos = distY(rng);
+				xPos = distX(rng);
+			} while (yPos < SafeZoneSize && xPos < SafeZoneSize || !CanGo(yPos, xPos));
+
+			m_ppNpcSession[i]->InitPosition({ yPos, xPos });
+		}
 	}
+	std::cout << "Npc Object initialization complete.\n";
 }
 
 void GameManager::AddPlayerSession(int playerId, string playerName, int yPos, int xPos,
@@ -59,12 +84,12 @@ void GameManager::AddPlayerSession(int playerId, string playerName, int yPos, in
 	m_ppPlayerSession[playerId]->SetLevel(level);
 }
 
-bool GameManager::CanGo(Position pos)
+bool GameManager::CanGo(Position pos) const
 {
 	return m_mapSession->CanGo(pos);
 }
 
-bool GameManager::CanGo(int yPos, int xPos)
+bool GameManager::CanGo(int yPos, int xPos) const
 {
 	Position pos{ yPos, xPos };
 	return m_mapSession->CanGo(pos);

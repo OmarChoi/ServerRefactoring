@@ -5,7 +5,6 @@ class PlayerSession : public Creature
 {
 private:
 	int								m_exp;
-	int								m_level;
 
 	unordered_set<int>				m_npcViewList;
 	mutex							m_npcViewListLock;
@@ -17,23 +16,18 @@ public:
 
 	void SetExp(int exp) { m_exp = exp; }
 	int GetExp() const { return m_exp; }
-	void SetLevel(int level) { m_level = level; }
-	int GetLevel() const { return m_level; }
 
 	void SetRandomPos();
 
 	void SetState(C_STATE state) 
 	{
-		m_stateLock.lock();
+		lock_guard<mutex> lock(m_stateLock);
 		m_state = state;
-		m_stateLock.unlock();
 	}
 	C_STATE GetState()
 	{
-		C_STATE st;
-		m_stateLock.lock();
-		st = m_state;
-		m_stateLock.unlock();
+		lock_guard<mutex> lock(m_stateLock);
+		C_STATE st = m_state;
 		return st;
 	}
 private:
