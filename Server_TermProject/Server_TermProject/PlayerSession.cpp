@@ -1,10 +1,13 @@
 #include "stdafx.h"
+#include "Timer.h"
 #include "Manager.h"
 #include "NpcSession.h"
 #include "GameManager.h";
 #include "PlayerSession.h";
 #include "NetworkManager.h";
 #include "PlayerSocketHandler.h";
+
+extern Timer g_Timer;
 
 void PlayerSession::SetRandomPos()
 {
@@ -24,6 +27,30 @@ void PlayerSession::Init()
 {
 }
 
+void PlayerSession::SetState(PlayerState state)
+{
+	lock_guard<mutex> lock(m_stateLock);
+	m_state = state;
+}
+
+PlayerState PlayerSession::GetState()
+{
+	lock_guard<mutex> lock(m_stateLock);
+	PlayerState st = m_state;
+	return st;
+}
+
+void PlayerSession::Die()
+{
+	Creature::Die();
+	
+	int penalty = GetExpRequirement(m_level) * 0.2f;
+	m_exp = std::max(0, m_exp - penalty);
+
+	// N초 후 부활 타이머에 삽입
+	g_Timer.AddTimer(m_objectID, chrono::system_clock::now() + 5s, TIMER_TYPE::RespawnObject);
+}
+
 void PlayerSession::AddViewNPCList(int objID)
 {
 	m_npcViewListLock.lock();
@@ -41,8 +68,8 @@ void PlayerSession::RemoveViewNPCList(int objID)
 
 void PlayerSession::UpdateViewList()
 {
-	C_STATE currState = m_state;
-	if (currState != C_STATE::CT_INGAME) return;
+	PlayerState currState = m_state;
+	if (currState != PlayerState::CT_INGAME) return;
 	GameManager* gameManager = Manager::GetInstance().GetGameManager();
 	PlayerSocketHandler* myNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(m_objectID);
 	m_viewListLock.lock();
@@ -60,8 +87,8 @@ void PlayerSession::UpdateViewList()
 		if (player == nullptr) continue;
 		if (i == m_objectID) continue;
 
-		C_STATE st = player->GetState();
-		if (st != C_STATE::CT_INGAME) continue;
+		PlayerState st = player->GetState();
+		if (st != PlayerState::CT_INGAME) continue;
 		
 		if (CanSee(player))	// 현재 내 시야에서 보이면
 		{
@@ -113,4 +140,9 @@ void PlayerSession::UpdateViewList()
 	m_viewList = newViewList;
 	m_npcViewList = newNpcViewList;
 	m_viewListLock.unlock();
+}
+
+int PlayerSession::GetExpRequirement(int level)
+{
+	return 100 * pow(2, level - 1);
 }

@@ -4,6 +4,7 @@
 #include "Manager.h"
 #include "NpcSession.h"
 #include "GameManager.h"
+#include "PlayerSession.h"
 #include "NetworkManager.h"
 #include "DataBaseManager.h"
 
@@ -53,6 +54,19 @@ void WorkerThread()
 		{
 			NpcSession* npc = manager.GetGameManager()->GetNpcSession(static_cast<int>(key));
 			npc->Update();
+			if (ex_over != NULL)
+				delete ex_over;
+			break;
+		}
+		case COMP_TYPE::RespawnObject:
+		{
+			int objID = static_cast<int>(key);
+			Creature* creature = nullptr;
+			if (objID < MAX_USER) 
+				creature = manager.GetGameManager()->GetPlayerSession(objID);
+			else
+				creature = manager.GetGameManager()->GetNpcSession(objID - MAX_USER);
+			creature->RespawnObject();
 			if (ex_over != NULL)
 				delete ex_over;
 			break;

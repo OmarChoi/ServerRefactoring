@@ -9,6 +9,9 @@ protected:
 	float				m_speed;
 	Position			m_pos;
 
+	bool				m_bActive;
+	mutex				activeMutex;
+
 	unordered_set<int>				m_viewList;
 	mutex							m_viewListLock;
 
@@ -39,10 +42,18 @@ public:
 	void SetLevel(int level) { m_level = level; }
 	int GetLevel() const { return m_level; }
 
+	bool IsActive();
+	void SetActive(bool active);
+
 	virtual void AddViewList(int objID);
 	virtual void RemoveViewList(int objID);
 
-	bool CanSee(const Creature* other);
+	virtual bool CanSee(const Creature* other);
+
+public:
+	virtual void RespawnObject();
+	virtual void ApplyDamage(int damage, int objId = -1);
+	virtual void Die();
 protected:
 	virtual void UpdateViewList() {};
 };

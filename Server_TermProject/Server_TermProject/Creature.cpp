@@ -41,3 +41,35 @@ bool Creature::CanSee(const Creature* other)
 	if (abs(other->GetPos().xPos - m_pos.xPos) > VIEW_RANGE) return false;
 	return abs(other->GetPos().yPos - m_pos.yPos) < VIEW_RANGE;
 }
+
+bool Creature::IsActive()
+{
+	std::lock_guard<std::mutex> lock(activeMutex);
+	return m_bActive;
+}
+
+void Creature::SetActive(bool active)
+{
+	// 초기화하는 경우 체력을 정상적으로 설정해주고 활성화 함수 호출.
+	if (m_hp < FLT_EPSILON && active == true) return;
+	std::lock_guard<std::mutex> lock(activeMutex);
+	m_bActive = active;
+}
+
+void Creature::ApplyDamage(int damage, int objId)
+{
+	m_hp -= damage;
+	if (m_hp < FLT_EPSILON)
+		Die();
+}
+
+void Creature::Die()
+{
+	SetActive(false);
+}
+
+void Creature::RespawnObject()
+{
+	m_hp = m_maxHp;
+	SetActive(true);
+}

@@ -3,14 +3,11 @@
 class NpcSession : public Creature
 {
 protected:
-    bool                                m_bActive;
-    mutex                               activeMutex;
     int                                 m_targetID = -1;
     MonsterType                         m_type;
     MonsterBehavior                     m_behavior;
     int                                 m_attackRange;
     int                                 m_damage;
-    int                                 m_speed;
     Position                            m_spawnPos;
     chrono::system_clock::time_point    m_MakePathTime;
     stack<Position>                     m_path;
@@ -21,20 +18,17 @@ public:
     void RemoveViewList(int objID) override;
 
 protected:
-    virtual void UpdateViewList() override;
-
+    void UpdateViewList() override;
+    bool CanSee(const Creature* other) override;
 public:
     MonsterType GetType() { return m_type; }
     MonsterBehavior GetBehaviorType() { return m_behavior; }
     void SetType(MonsterType type) { m_type = type; }
-    bool IsActive();
-    void SetActive(bool active);
     void SetTarget(int objId);
 
 public:
     void ActiveNpc();
     void InitPosition(Position pos);
-    virtual void GetDamage(int objId, int damage);
     void ReleaseTarget();
     void Respawn();
 
@@ -56,6 +50,8 @@ private:
     void ChaseTarget();
     void MoveRandom();
     void DeActiveNpc();
+    void Die() override;
+    void RespawnObject() override;
 };
 
 

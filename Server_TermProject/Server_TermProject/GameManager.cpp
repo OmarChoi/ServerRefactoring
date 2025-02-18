@@ -49,11 +49,15 @@ void GameManager::Init()
 #pragma omp for schedule(dynamic) nowait
 		for (int i = 0; i < MAX_NPC; ++i)
 		{
-			std::uniform_int_distribution<int> monsterType(0, 3);
-			m_ppNpcSession[i] = NpcFactory::CreateNpc(static_cast<MonsterType>(monsterType(rng)));
+			std::uniform_int_distribution<int> monsterType(1, 3);
+			MonsterType type = static_cast<MonsterType>(monsterType(rng));
+			m_ppNpcSession[i] = NpcFactory::CreateNpc(type);
 			m_ppNpcSession[i]->SetObjId(i);
+			
+			string name = Utils::GetMonsterName(type) + to_string(i);
+			m_ppNpcSession[i]->SetName(name);
+			
 			int yPos, xPos;
-
 			do
 			{
 				yPos = distY(rng);

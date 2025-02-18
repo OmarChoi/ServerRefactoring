@@ -5,10 +5,9 @@ class PlayerSession : public Creature
 {
 private:
 	int								m_exp;
-
 	unordered_set<int>				m_npcViewList;
 	mutex							m_npcViewListLock;
-	C_STATE							m_state = C_STATE::CT_FREE;
+	PlayerState						m_state = PlayerState::CT_FREE;
 	mutex							m_stateLock;
 public:
 	PlayerSession() {};
@@ -19,17 +18,10 @@ public:
 
 	void SetRandomPos();
 
-	void SetState(C_STATE state) 
-	{
-		lock_guard<mutex> lock(m_stateLock);
-		m_state = state;
-	}
-	C_STATE GetState()
-	{
-		lock_guard<mutex> lock(m_stateLock);
-		C_STATE st = m_state;
-		return st;
-	}
+	void SetState(PlayerState state);
+	PlayerState GetState();
+
+	void Die() override;
 private:
 	void Init();
 
@@ -38,6 +30,7 @@ public:
 	void RemoveViewNPCList(int objID);
 	virtual void UpdateViewList() override;
 
-protected:
+private:
+	int GetExpRequirement(int level);
 };
 

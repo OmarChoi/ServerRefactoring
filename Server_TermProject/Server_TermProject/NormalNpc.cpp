@@ -1,12 +1,12 @@
 #include "stdafx.h"
 #include "NormalNpc.h"
 
-void NormalNpc::GetDamage(int objId, int damage)
+void NormalNpc::ApplyDamage(int damage, int objId)
 {
-	if (m_targetID == -1) 
+	if (m_targetID == -1 && objId != -1)
 		m_targetID = objId;
 
-	NpcSession::GetDamage(objId, damage);
+	Creature::ApplyDamage(damage, objId);
 }
 
 void NormalNpc::RemoveViewList(int objID)

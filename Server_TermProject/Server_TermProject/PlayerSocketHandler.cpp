@@ -102,7 +102,7 @@ void PlayerSocketHandler::VerifyUserAccount(const char* userName)
 	{
 		player->SetName(userName);
 		player->SetObjId(m_playerID);
-		player->SetState(C_STATE::CT_INGAME);
+		player->SetState(PlayerState::CT_INGAME);
 		player->SetRandomPos();
 		player->UpdateViewList();
 		
@@ -120,7 +120,7 @@ void PlayerSocketHandler::VerifyUserAccount(const char* userName)
 		send_login_fail_packet();
 		return;
 	}
-	player->SetState(C_STATE::CT_INGAME);
+	player->SetState(PlayerState::CT_INGAME);
 	player->SetObjId(m_playerID);
 	player->UpdateViewList();
 	send_login_ok_packet();

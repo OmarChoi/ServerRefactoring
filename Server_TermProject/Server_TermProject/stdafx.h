@@ -35,6 +35,7 @@
 using namespace std;
 
 constexpr int VIEW_RANGE = 8;
+constexpr int NPC_VIEW_RANGE = 10;
 constexpr int SafeZoneSize = 10;
 inline thread_local std::mt19937 rng(std::random_device{}());
 
@@ -46,12 +47,14 @@ enum class COMP_TYPE
 	Recv, 
 	Send,
 	NpcUpdate,
+	RespawnObject,
 	SaveData
 };
 
 enum class TIMER_TYPE
 {
 	NpcUpdate,
+	RespawnObject,
 	SaveData
 };
 
@@ -69,7 +72,7 @@ enum class MonsterBehavior
 	Agro = 1,
 };
 
-enum C_STATE 
+enum class PlayerState 
 { 
 	CT_FREE, 
 	CT_ALLOC, 
@@ -184,5 +187,13 @@ namespace Utils
 	{
 		// 단순히 가로 거리 + 세로거리
 		return abs(destPos.yPos - startPos.yPos) + abs(destPos.xPos - startPos.xPos);
+	}
+
+	inline string GetMonsterName(MonsterType type)
+	{
+		if (type == MonsterType::Slime) return "Slime";
+		else if (type == MonsterType::Goblin) return "Goblin";
+		else if (type == MonsterType::Orc) return "Orc";
+		else return "UnKnown";
 	}
 }

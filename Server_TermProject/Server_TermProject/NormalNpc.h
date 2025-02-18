@@ -4,7 +4,7 @@
 class NormalNpc : public NpcSession
 {
 public:
-	void GetDamage(int objId, int damage) override;
+	void ApplyDamage(int damage, int objId = -1) override;
 	void RemoveViewList(int objID) override;
 };
 

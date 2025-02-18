@@ -40,16 +40,6 @@ function GetMonsterInfo(monsterType)
         level = -1, hp = -1.0, damage = -1, attackRange = -1, speed = -1 }
 end
 
-function ActivateNpc(monster, distance)
-    if monster.behavior == MonsterBehavior.Normal then
-        return monster.hp < monster.maxHp
-    elseif monster.type == MonsterBehavior.Agro then
-        return distance <= monster.viewRange
-    else
-        return false
-    end
-end
-
 function OnUpdate(hasTarget, distance, attackRange)
     if hasTarget then
         if distance <= attackRange then     

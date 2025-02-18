@@ -29,6 +29,7 @@ NpcSession::NpcSession() : Creature()
 
 void NpcSession::AddViewList(int objID)
 {
+	if (m_hp < FLT_EPSILON) return;
 	if (IsActive() == false)
 		ActiveNpc();
 	std::lock_guard<std::mutex> lock(m_viewListLock);
@@ -49,13 +50,14 @@ void NpcSession::NpcSession::UpdateViewList()
 	auto prevViewList = m_viewList;
 	m_viewListLock.unlock();
 
+	bool targetValid = false;
 	unordered_set<int> newViewList;
 	for (int i = 0; i < MAX_USER; ++i)
 	{
 		PlayerSession* player = gameManager->GetPlayerSession(i);
 		PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(i);
 		if (player == nullptr) continue;
-		if (player->GetState() != C_STATE::CT_INGAME) continue;
+		if (player->GetState() != PlayerState::CT_INGAME) continue;
 		if (CanSee(player))	// 현재 내 시야에서 보이면
 		{
 			if (prevViewList.count(player->GetId()) == 0) // 이전에는 없었으면 추가
@@ -64,7 +66,9 @@ void NpcSession::NpcSession::UpdateViewList()
 				pNetwork->send_add_npc_packet(this);
 			}
 			else
-			{ 
+			{
+				if (i == m_targetID)
+					targetValid = true;
 				pNetwork->send_npc_move_object_packet(this);
 			}
 			newViewList.insert(i);
@@ -79,21 +83,23 @@ void NpcSession::NpcSession::UpdateViewList()
 		}
 	}
 
+	if (targetValid == false)
+		ReleaseTarget();
+
+	if (newViewList.size() == 0)
+	{
+		DeActiveNpc();
+		return;
+	}
 	m_viewListLock.lock();
 	m_viewList = newViewList;
 	m_viewListLock.unlock();
 }
 
-bool NpcSession::IsActive()
+bool NpcSession::CanSee(const Creature* other)
 {
-	std::lock_guard<std::mutex> lock(activeMutex);
-	return m_bActive;
-}
-
-void NpcSession::SetActive(bool active)
-{
-	std::lock_guard<std::mutex> lock(activeMutex);
-	m_bActive = active;
+	if (abs(other->GetPos().xPos - m_pos.xPos) > NPC_VIEW_RANGE) return false;
+	return abs(other->GetPos().yPos - m_pos.yPos) < NPC_VIEW_RANGE;
 }
 
 void NpcSession::SetTarget(int objId)
@@ -104,6 +110,7 @@ void NpcSession::SetTarget(int objId)
 
 void NpcSession::ActiveNpc()
 {
+	if (m_hp < FLT_EPSILON) return;
 	if (IsActive() == true) return;
 	SetActive(true);
 
@@ -124,13 +131,11 @@ void NpcSession::InitPosition(Position pos)
 	SetPos(pos);
 }
 
-void NpcSession::GetDamage(int objId, int damage)
-{
-	m_hp -= damage;
-}
-
 void NpcSession::ReleaseTarget()
 {
+	SetTarget(-1);
+	while (!m_path.empty())
+		m_path.pop();
 }
 
 void NpcSession::Respawn()
@@ -153,6 +158,7 @@ void NpcSession::MoveInfo(NpcSession&& other)
 	m_type = other.m_type;
 	m_behavior = other.m_behavior;
 	m_hp = other.m_hp;
+	m_maxHp = other.m_maxHp;
 	m_damage = other.m_damage;
 	m_attackRange = other.m_attackRange;
 	m_speed = other.m_speed;
@@ -171,6 +177,7 @@ void NpcSession::SetInfoByLua()
 	m_type = static_cast<MonsterType>(monsterInfo["type"].get<int>());
 	m_behavior = static_cast<MonsterBehavior>(monsterInfo["behavior"].get<int>());
 	m_hp = monsterInfo["hp"].get_or(-1.0);
+	m_maxHp = m_hp;
 	m_damage = monsterInfo["damage"].get_or(-1);
 	m_attackRange = monsterInfo["attackRange"].get_or(-1);
 	m_speed = monsterInfo["speed"].get_or(-1.0f);
@@ -180,8 +187,15 @@ void NpcSession::SetInfoByLua()
 
 void NpcSession::Update()
 {
+	if (IsActive() == false) return;
 	bool hasTarget = (m_targetID == -1) ? false : true;
-	int distance = 2;
+	int distance = NPC_VIEW_RANGE;
+	if (hasTarget == true) 
+	{
+		PlayerSession* player = Manager::GetInstance().GetGameManager()->GetPlayerSession(m_targetID);
+		distance = Utils::GetDist(m_pos, player->GetPos());
+	}
+
 	sol::protected_function onUpdate = lua["OnUpdate"];
 	if (!onUpdate.valid()) {
 		cerr << "NpcLuaManager_UpdateNpc : OnUpdate function doesn't exist in Lua\n";
@@ -193,7 +207,8 @@ void NpcSession::Update()
 
 void NpcSession::Attack()
 {
-
+	PlayerSession* targetPlayer = Manager::GetInstance().GetGameManager()->GetPlayerSession(m_targetID);
+	targetPlayer->ApplyDamage(m_damage);
 }
 
 void NpcSession::CreatePath()
@@ -308,6 +323,32 @@ void NpcSession::MoveRandom()
 void NpcSession::DeActiveNpc()
 {
 	SetActive(false);
+	ReleaseTarget();
+
+	m_viewListLock.lock();
+	auto LastViewList = m_viewList;
+	m_viewList.clear();
+	m_viewListLock.unlock();
+
+	for (int id : LastViewList)
+	{
+		PlayerSession* player = Manager::GetInstance().GetGameManager()->GetPlayerSession(id);
+		PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(id);
+		player->RemoveViewNPCList(m_objectID);
+		pNetwork->send_remove_npc_object_packet(this);
+	}
+}
+
+void NpcSession::Die()
+{
+	DeActiveNpc();
+	g_Timer.AddTimer(m_objectID + MAX_USER, chrono::system_clock::now() + 5s, TIMER_TYPE::RespawnObject);
+}
+
+void NpcSession::RespawnObject()
+{
+	SetPos(m_spawnPos);
+	Creature::RespawnObject();
 }
 
 //=============================================================================
@@ -323,6 +364,5 @@ NpcSession* NpcFactory::CreateNpc(MonsterType type)
 		newNpc = new NormalNpc();
 
 	newNpc->MoveInfo(std::move(tempNpc));
-
 	return newNpc;
 }
