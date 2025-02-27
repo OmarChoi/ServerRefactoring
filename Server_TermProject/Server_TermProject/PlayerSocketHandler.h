@@ -20,8 +20,10 @@ public:
 	void ApplyPacketData(char* packet);
 	void ProcessPacket(DWORD recvSize, OVER_EXP* over);
 
-public:
+private:
+	void ActivatePlayer(PlayerSession* pPlayer);
 	void VerifyUserAccount(const char* userName);
+public:
 
 	void SendPacket(void* packet);
 	void send_add_object_packet(const PlayerSession* pPlayer);
@@ -35,5 +37,5 @@ public:
 	void send_login_info_packet(const PlayerSession* pPlayer);
 	void send_login_ok_packet();
 	void send_login_fail_packet();
-	void send_stat_change_packet();
+	void send_stat_change_packet(const PlayerSession* pPlayer);
 };

@@ -4,9 +4,11 @@ class Creature
 protected:
 	int					m_objectID;
 	string				m_name;
-	int					m_level;
+	atomic_int			m_level;
 	float				m_hp, m_maxHp;
 	float				m_speed;
+	int                 m_attackRange;
+	int                 m_damage;
 	Position			m_pos;
 
 	bool				m_bActive;
@@ -20,6 +22,7 @@ protected:
 
 public:
 	Creature();
+	virtual ~Creature();
 
 	void SetPos(int y, int x);
 	void SetPos(Position pos) { SetPos(pos.yPos, pos.xPos); }
@@ -49,7 +52,6 @@ public:
 	virtual void RemoveViewList(int objID);
 
 	virtual bool CanSee(const Creature* other);
-
 public:
 	virtual void RespawnObject();
 	virtual void ApplyDamage(int damage, int objId = -1);

@@ -47,6 +47,7 @@ void PlayerSocketHandler::ProcessPacket(DWORD recvDataSize, OVER_EXP* over)
 void PlayerSocketHandler::ApplyPacketData(char* packet)
 {
 	GameManager* gameManager = Manager::GetInstance().GetGameManager();
+	PlayerSession* player = gameManager->GetPlayerSession(m_playerID);
 	switch (packet[2]) {
 	case CS_LOGIN:
 	{
@@ -56,16 +57,16 @@ void PlayerSocketHandler::ApplyPacketData(char* packet)
 	}
 	case CS_MOVE:
 	{
+		if (player->GetState() != PlayerState::CT_INGAME) return;
 		CS_MOVE_PACKET* p = reinterpret_cast<CS_MOVE_PACKET*>(packet);
-		PlayerSession* player = gameManager->GetPlayerSession(m_playerID);
 		Position nextPos = player->GetPos() + movements[p->direction];
 		m_moveTime = p->move_time;
-		if (gameManager->CanGo(nextPos)) 
+		if (gameManager->CanGo(nextPos) && player->IsActive())
 		{
 			player->SetPos(nextPos);
 			player->UpdateViewList();
-			send_move_object_packet(player);
 		}
+		send_move_object_packet(player);
 		break;
 	}
 	case CS_CHAT:
@@ -74,10 +75,9 @@ void PlayerSocketHandler::ApplyPacketData(char* packet)
 	}
 	case CS_ATTACK:
 	{
-		break;
-	}
-	case CS_TELEPORT:
-	{
+		if (player->GetState() != PlayerState::CT_INGAME) return;
+		if (player->IsActive() == false) return;
+		player->Attack();
 		break;
 	}
 	case CS_LOGOUT:
@@ -87,6 +87,16 @@ void PlayerSocketHandler::ApplyPacketData(char* packet)
 	default:
 		cout << "process something.\n";
 	}
+}
+
+void PlayerSocketHandler::ActivatePlayer(PlayerSession* pPlayer)
+{
+	pPlayer->SetObjId(m_playerID);
+	pPlayer->SetActive(true);
+	pPlayer->SetState(PlayerState::CT_INGAME);
+	pPlayer->UpdateViewList();
+	send_login_ok_packet();
+	send_login_info_packet(pPlayer);
 }
 
 void PlayerSocketHandler::VerifyUserAccount(const char* userName)
@@ -101,13 +111,12 @@ void PlayerSocketHandler::VerifyUserAccount(const char* userName)
 	if (strncmp(userName, "StressTest", 10) == 0)
 	{
 		player->SetName(userName);
-		player->SetObjId(m_playerID);
-		player->SetState(PlayerState::CT_INGAME);
+		player->SetLevel(1);
+		player->SetExp(0);
+		player->SetHp(10'000);
+		player->SetMaxHp(10'000);
 		player->SetRandomPos();
-		player->UpdateViewList();
-		
-		send_login_ok_packet();
-		send_login_info_packet(player);
+		ActivatePlayer(player);
 		return;
 	}
 	strncpy_s(name, userName, NAME_SIZE);
@@ -120,11 +129,7 @@ void PlayerSocketHandler::VerifyUserAccount(const char* userName)
 		send_login_fail_packet();
 		return;
 	}
-	player->SetState(PlayerState::CT_INGAME);
-	player->SetObjId(m_playerID);
-	player->UpdateViewList();
-	send_login_ok_packet();
-	send_login_info_packet(player);
+	ActivatePlayer(player);
 }
 
 void PlayerSocketHandler::SendPacket(void* packet)
@@ -239,10 +244,13 @@ void PlayerSocketHandler::send_login_fail_packet()
 	SendPacket(&sendData);
 }
 
-void PlayerSocketHandler::send_stat_change_packet()
+void PlayerSocketHandler::send_stat_change_packet(const PlayerSession* pPlayer)
 {
 	SC_STAT_CHANGE_PACKET sendData;
 	sendData.size = sizeof(SC_STAT_CHANGE_PACKET);
 	sendData.type = SC_STAT_CHANGE;
+	sendData.hp = pPlayer->GetHp();
+	sendData.exp = pPlayer->GetExp();
+	sendData.level = pPlayer->GetLevel();
 	SendPacket(&sendData);
 }

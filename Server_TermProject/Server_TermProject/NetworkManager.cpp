@@ -1,5 +1,7 @@
 #include "stdafx.h"
 #include "Manager.h"
+#include "GameManager.h"
+#include "PlayerSession.h"
 #include "NetworkManager.h"
 #include "PlayerSocketHandler.h"
 
@@ -87,4 +89,19 @@ void NetworkManager::Accept()
 void NetworkManager::Recv(DWORD recvSize, OVER_EXP* over, int playerKey)
 {
 	m_ppPlayerSocketHandler[playerKey]->ProcessPacket(recvSize, over);
+}
+
+void NetworkManager::UpdatePlayerInfo()
+{
+	Manager& manager = Manager::GetInstance();
+	int nPlayerNum = manager.GetPlayerNum();
+
+	for (int i = 0; i < nPlayerNum; ++i) 
+	{
+		PlayerSession* player = manager.GetGameManager()->GetPlayerSession(i);
+		if (player == nullptr) continue;
+		if (player->GetState() != PlayerState::CT_INGAME) continue;
+		if (player->HasStatChanged() == false) continue;
+		m_ppPlayerSocketHandler[i]->send_stat_change_packet(player);
+	}
 }

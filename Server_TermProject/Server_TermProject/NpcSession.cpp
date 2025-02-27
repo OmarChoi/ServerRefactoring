@@ -24,7 +24,12 @@ struct AStarNode
 NpcSession::NpcSession() : Creature()
 {
 	InitLua();
+}
 
+NpcSession::~NpcSession()
+{
+	while (!m_path.empty())
+		m_path.pop();
 }
 
 void NpcSession::AddViewList(int objID)
@@ -102,6 +107,14 @@ bool NpcSession::CanSee(const Creature* other)
 	return abs(other->GetPos().yPos - m_pos.yPos) < NPC_VIEW_RANGE;
 }
 
+void NpcSession::CheckTarget()
+{
+	if (m_targetID == -1) return;
+	PlayerSession* player = Manager::GetInstance().GetGameManager()->GetPlayerSession(m_targetID);
+	if (player->IsActive() == false || player->GetState() != PlayerState::CT_INGAME)
+		ReleaseTarget();
+}
+
 void NpcSession::SetTarget(int objId)
 {
 	std::lock_guard<std::mutex> lock(mutex);
@@ -162,7 +175,7 @@ void NpcSession::MoveInfo(NpcSession&& other)
 	m_damage = other.m_damage;
 	m_attackRange = other.m_attackRange;
 	m_speed = other.m_speed;
-	m_level = other.m_level;
+	m_level.store(other.m_level);
 }
 
 void NpcSession::SetInfoByLua()
@@ -188,19 +201,16 @@ void NpcSession::SetInfoByLua()
 void NpcSession::Update()
 {
 	if (IsActive() == false) return;
+	CheckTarget();
 	bool hasTarget = (m_targetID == -1) ? false : true;
 	int distance = NPC_VIEW_RANGE;
-	if (hasTarget == true) 
+	if (hasTarget == true)
 	{
 		PlayerSession* player = Manager::GetInstance().GetGameManager()->GetPlayerSession(m_targetID);
 		distance = Utils::GetDist(m_pos, player->GetPos());
 	}
 
 	sol::protected_function onUpdate = lua["OnUpdate"];
-	if (!onUpdate.valid()) {
-		cerr << "NpcLuaManager_UpdateNpc : OnUpdate function doesn't exist in Lua\n";
-		return;
-	}
 	onUpdate(hasTarget, distance, m_attackRange);
 	g_Timer.AddTimer(m_objectID, chrono::system_clock::now() + 1s, TIMER_TYPE::NpcUpdate);
 }
@@ -209,6 +219,8 @@ void NpcSession::Attack()
 {
 	PlayerSession* targetPlayer = Manager::GetInstance().GetGameManager()->GetPlayerSession(m_targetID);
 	targetPlayer->ApplyDamage(m_damage);
+	if (targetPlayer->GetHp() < FLT_EPSILON)
+	 	ReleaseTarget();
 }
 
 void NpcSession::CreatePath()
@@ -268,13 +280,12 @@ void NpcSession::CreatePath()
 	while (!m_path.empty())
 		m_path.pop();
 
-	if (gameManager->CanGo(targetPos.yPos, targetPos.xPos) == false) {
-		cout << target->GetId() << " : (" << targetPos.yPos << ", " << targetPos.xPos << ")\n";
-	}
 	m_path.emplace(targetPos);
 	while (true)
 	{
 		Position pos = m_path.top();
+		if (gameManager->CanGo(pos.yPos, pos.xPos) == false)
+			break;
 		if (pos == parent[pos.yPos][pos.xPos])
 			break;
 
@@ -324,7 +335,6 @@ void NpcSession::DeActiveNpc()
 {
 	SetActive(false);
 	ReleaseTarget();
-
 	m_viewListLock.lock();
 	auto LastViewList = m_viewList;
 	m_viewList.clear();
@@ -349,6 +359,7 @@ void NpcSession::RespawnObject()
 {
 	SetPos(m_spawnPos);
 	Creature::RespawnObject();
+	g_Timer.AddTimer(m_objectID, chrono::system_clock::now() + 1s, TIMER_TYPE::NpcUpdate);
 }
 
 //=============================================================================

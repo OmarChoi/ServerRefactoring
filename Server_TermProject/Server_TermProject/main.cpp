@@ -23,14 +23,15 @@ void WorkerThread()
 		if (FALSE == ret) 
 		{
 			if (ex_over->m_compType == COMP_TYPE::Accept)
+			{
 				cout << "Accept Error";
+			}
 			else 
 			{
 				cout << "GQCS Error on client[" << key << "]\n";
-				// disconnect(static_cast<int>(key));
 				if (ex_over->m_compType == COMP_TYPE::Send) delete ex_over;
-				continue;
 			}
+			continue;
 		}
 
 		switch (ex_over->m_compType)
@@ -56,6 +57,14 @@ void WorkerThread()
 			npc->Update();
 			if (ex_over != NULL)
 				delete ex_over;
+			break;
+		}		
+		case COMP_TYPE::UpdatePlayerInfo:
+		{
+			manager.GetNetworkManager()->UpdatePlayerInfo();
+			if (ex_over != NULL)
+				delete ex_over;
+			g_Timer.AddTimer(99999, chrono::system_clock::now() + 500ms, TIMER_TYPE::PlayerUpdate);
 			break;
 		}
 		case COMP_TYPE::RespawnObject:
@@ -90,6 +99,7 @@ VOID TimerThread()
 #ifndef stressTest
 	g_Timer.AddTimer(99999, chrono::system_clock::now() + 5s, TT_SAVE);
 #endif
+	g_Timer.AddTimer(99999, chrono::system_clock::now() + 500ms, TIMER_TYPE::PlayerUpdate);
 	g_Timer.ProcessTimer();
 }
 

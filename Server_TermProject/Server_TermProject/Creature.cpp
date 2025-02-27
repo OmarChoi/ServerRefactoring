@@ -1,9 +1,17 @@
 #include "stdafx.h"
 #include "Creature.h"
 
-Creature::Creature() : m_pos(-1, -1), m_hp(0.0f), m_maxHp(0.0f), m_objectID(-1),
-m_lastMoveTime(std::chrono::high_resolution_clock::time_point::min()), m_lastAttackTime(std::chrono::high_resolution_clock::time_point::min())
+Creature::Creature() : m_pos(-1, -1), m_hp(0.0f), m_maxHp(0.0f), m_objectID(-1), 
+m_damage(100), m_bActive(false), m_attackRange(1), m_speed(1.0), m_level(1),
+m_lastMoveTime(std::chrono::high_resolution_clock::now()), m_lastAttackTime(std::chrono::high_resolution_clock::now())
 {
+}
+
+Creature::~Creature()
+{
+	m_viewListLock.lock();
+	m_viewList.clear();
+	m_viewListLock.unlock();
 }
 
 void Creature::SetPos(int y, int x)
@@ -58,7 +66,7 @@ void Creature::SetActive(bool active)
 
 void Creature::ApplyDamage(int damage, int objId)
 {
-	m_hp -= damage;
+	m_hp = std::max(0.0f, m_hp - damage);
 	if (m_hp < FLT_EPSILON)
 		Die();
 }
@@ -72,4 +80,5 @@ void Creature::RespawnObject()
 {
 	m_hp = m_maxHp;
 	SetActive(true);
+	UpdateViewList();
 }

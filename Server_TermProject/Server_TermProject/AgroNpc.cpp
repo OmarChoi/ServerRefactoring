@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "AgroNpc.h"
+#include "GameManager.h"
 
 void AgroNpc::AddViewList(int objID)
 {
@@ -10,10 +11,29 @@ void AgroNpc::AddViewList(int objID)
 
 void AgroNpc::RemoveViewList(int objID)
 {
-	if (m_targetID == objID)
-	{
-		// ViewList 내에 있는 다른 Target 설정
-
-	}
 	NpcSession::RemoveViewList(objID);
+	if (m_targetID == objID)
+		SetNearTarget();
+}
+
+void AgroNpc::SetNearTarget()
+{
+	m_viewListLock.lock();
+	auto viewList = m_viewList;
+	m_viewListLock.unlock();
+	if (!viewList.empty())
+		SetTarget(*m_viewList.begin());
+}
+
+void AgroNpc::CheckTarget()
+{
+	NpcSession::CheckTarget();
+	if (m_targetID == -1) 
+		SetNearTarget();
+}
+
+void AgroNpc::RespawnObject()
+{
+	NpcSession::RespawnObject();
+	SetNearTarget();
 }

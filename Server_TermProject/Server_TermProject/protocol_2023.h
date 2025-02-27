@@ -125,7 +125,6 @@ struct SC_STAT_CHANGE_PACKET {
 	unsigned short size;
 	char	type;
 	int		hp;
-	int		max_hp;
 	int		exp;
 	int		level;
 };

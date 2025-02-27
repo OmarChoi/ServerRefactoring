@@ -18,7 +18,7 @@ public:
 	void Init();
 	void Accept();
 	void Recv(DWORD recvSize, OVER_EXP* over, int playerKey);
-
+	void UpdatePlayerInfo();
 	// 수정 필요
 	PlayerSocketHandler* GetPlayerNetwork(int objId) { return m_ppPlayerSocketHandler[objId]; }
 };

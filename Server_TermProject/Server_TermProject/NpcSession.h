@@ -6,20 +6,20 @@ protected:
     int                                 m_targetID = -1;
     MonsterType                         m_type;
     MonsterBehavior                     m_behavior;
-    int                                 m_attackRange;
-    int                                 m_damage;
     Position                            m_spawnPos;
     chrono::system_clock::time_point    m_MakePathTime;
     stack<Position>                     m_path;
 
 public:
     NpcSession();
+    virtual ~NpcSession();
     void AddViewList(int objID) override;
     void RemoveViewList(int objID) override;
 
 protected:
     void UpdateViewList() override;
     bool CanSee(const Creature* other) override;
+    virtual void CheckTarget();
 public:
     MonsterType GetType() { return m_type; }
     MonsterBehavior GetBehaviorType() { return m_behavior; }
@@ -31,7 +31,7 @@ public:
     void InitPosition(Position pos);
     void ReleaseTarget();
     void Respawn();
-
+    
 private:
     // Lua ฐüทร
     sol::state                          lua;
@@ -51,7 +51,8 @@ private:
     void MoveRandom();
     void DeActiveNpc();
     void Die() override;
-    void RespawnObject() override;
+protected:
+    virtual void RespawnObject() override;
 };
 
 

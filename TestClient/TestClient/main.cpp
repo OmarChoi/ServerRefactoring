@@ -346,7 +346,6 @@ void ProcessPacket(char* ptr)
 	{
 		SC_STAT_CHANGE_PACKET* packet = reinterpret_cast<SC_STAT_CHANGE_PACKET*>(ptr);
 
-		avatar.m_maxHP = packet->max_hp;
 		avatar.m_exp = packet->exp;
 		avatar.m_hp = packet->hp;
 		avatar.m_level = packet->level;

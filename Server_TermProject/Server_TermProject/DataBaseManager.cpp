@@ -80,7 +80,8 @@ bool DataBaseManager::GetUserData(WCHAR* userID, PlayerSession* pPlayer)
     }
 
     retcode = SQLExecDirect(m_hStmt, (SQLWCHAR*)cpQuery, SQL_NTS);
-    if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) {
+    if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) 
+    {
 
         SQLBindCol(m_hStmt, 1, SQL_C_WCHAR, szName, sizeof(szName), &cbName);
         SQLBindCol(m_hStmt, 2, SQL_C_LONG, &hp, 0, &cbHp);

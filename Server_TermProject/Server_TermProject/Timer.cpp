@@ -32,8 +32,16 @@ void Timer::ProcessTimer()
 				exover->m_compType = COMP_TYPE::NpcUpdate;
 				PostQueuedCompletionStatus(iocpObject, 1, ev.m_objId, &exover->m_over);
 				break;
+			case TIMER_TYPE::PlayerUpdate:
+				exover->m_compType = COMP_TYPE::UpdatePlayerInfo;
+				PostQueuedCompletionStatus(iocpObject, 1, ev.m_objId, &exover->m_over);
+				break;
 			case TIMER_TYPE::SaveData:
 				exover->m_compType = COMP_TYPE::SaveData;
+				PostQueuedCompletionStatus(iocpObject, 1, ev.m_objId, &exover->m_over);
+				break;
+			case TIMER_TYPE::RespawnObject:
+				exover->m_compType = COMP_TYPE::RespawnObject;
 				PostQueuedCompletionStatus(iocpObject, 1, ev.m_objId, &exover->m_over);
 				break;
 			}

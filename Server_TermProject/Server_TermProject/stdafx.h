@@ -48,12 +48,14 @@ enum class COMP_TYPE
 	Send,
 	NpcUpdate,
 	RespawnObject,
+	UpdatePlayerInfo,
 	SaveData
 };
 
 enum class TIMER_TYPE
 {
 	NpcUpdate,
+	PlayerUpdate,
 	RespawnObject,
 	SaveData
 };

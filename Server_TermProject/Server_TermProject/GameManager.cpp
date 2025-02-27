@@ -34,7 +34,6 @@ void GameManager::Init()
 		m_ppPlayerSession[i]->SetObjId(i);
 	}
 
-
 	m_ppNpcSession = new NpcSession * [MAX_NPC];
 	std::cout << "Initiate Npc Object initialization.\n";
 
@@ -103,3 +102,4 @@ int GameManager::GetTileCost(Position pos)
 {
 	return m_mapSession->GetCost(pos);
 }
+

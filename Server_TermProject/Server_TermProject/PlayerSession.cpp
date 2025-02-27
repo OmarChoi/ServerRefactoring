@@ -9,6 +9,12 @@
 
 extern Timer g_Timer;
 
+PlayerSession::~PlayerSession()
+{
+	lock_guard<mutex> lock(m_npcViewListLock);
+	m_npcViewList.clear();
+}
+
 void PlayerSession::SetRandomPos()
 {
 	Manager& manager = Manager::GetInstance();
@@ -40,13 +46,56 @@ PlayerState PlayerSession::GetState()
 	return st;
 }
 
+void PlayerSession::Attack()
+{
+	std::chrono::time_point attackTime = std::chrono::high_resolution_clock::now();
+	auto duration = attackTime - m_lastAttackTime;
+	auto durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+	if (durationMs < 1000ms) return;
+	m_lastAttackTime = attackTime;
+	GameManager* gameManager = Manager::GetInstance().GetGameManager();
+	m_viewListLock.lock();
+	auto nearNpc = m_npcViewList;
+	m_viewListLock.unlock();
+
+	for (auto it : nearNpc)
+	{
+		NpcSession* npc = gameManager->GetNpcSession(it);
+		if (Utils::GetDist(npc->GetPos(), m_pos) <= 1)
+		{
+			npc->ApplyDamage(m_damage);
+			if (npc->IsActive() == false)
+				AddExp(npc->GetLevel());
+		}
+	}
+}
+
+void PlayerSession::ApplyDamage(int damage, int objId)
+{
+	Creature::ApplyDamage(damage, objId);
+	PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(m_objectID);
+	m_statChanged.store(true, memory_order_relaxed);
+}
+
+void PlayerSession::AddExp(int exp)
+{
+	m_exp.fetch_add(exp);
+	int mRequirement = GetExpRequirement(m_level.load());
+	if (m_exp > mRequirement)
+	{
+		m_level.fetch_add(1);
+		m_exp.fetch_sub(mRequirement);
+	}
+	m_statChanged.store(true, memory_order_relaxed);
+}
+
 void PlayerSession::Die()
 {
 	Creature::Die();
 	
 	int penalty = GetExpRequirement(m_level) * 0.2f;
 	m_exp = std::max(0, m_exp - penalty);
-
+	
 	// N초 후 부활 타이머에 삽입
 	g_Timer.AddTimer(m_objectID, chrono::system_clock::now() + 5s, TIMER_TYPE::RespawnObject);
 }
@@ -68,8 +117,7 @@ void PlayerSession::RemoveViewNPCList(int objID)
 
 void PlayerSession::UpdateViewList()
 {
-	PlayerState currState = m_state;
-	if (currState != PlayerState::CT_INGAME) return;
+	if (GetState() != PlayerState::CT_INGAME) return;
 	GameManager* gameManager = Manager::GetInstance().GetGameManager();
 	PlayerSocketHandler* myNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(m_objectID);
 	m_viewListLock.lock();
@@ -89,7 +137,6 @@ void PlayerSession::UpdateViewList()
 
 		PlayerState st = player->GetState();
 		if (st != PlayerState::CT_INGAME) continue;
-		
 		if (CanSee(player))	// 현재 내 시야에서 보이면
 		{
 			if (prevViewList.count(player->GetId()) == 0) // 이전에는 없었으면 추가
@@ -117,6 +164,7 @@ void PlayerSession::UpdateViewList()
 	{
 		NpcSession* npc = gameManager->GetNpcSession(i);
 		if (npc == nullptr) continue;
+		if (npc->GetHp() < FLT_EPSILON) continue;
 		if (CanSee(npc))	// 현재 내 시야에서 보이면
 		{
 			if (prevNpcViewList.count(i) == 0) // 이전에는 없었으면 추가
