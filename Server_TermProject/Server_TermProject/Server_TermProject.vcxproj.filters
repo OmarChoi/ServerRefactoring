@@ -84,6 +84,9 @@
     <ClCompile Include="NormalNpc.cpp">
       <Filter>Session\Creature\NPC\NpcType</Filter>
     </ClCompile>
+    <ClCompile Include="Section.cpp">
+      <Filter>Session\MapSession</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -128,6 +131,9 @@
     </ClInclude>
     <ClInclude Include="NormalNpc.h">
       <Filter>Session\Creature\NPC\NpcType</Filter>
+    </ClInclude>
+    <ClInclude Include="Section.h">
+      <Filter>Session\MapSession</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

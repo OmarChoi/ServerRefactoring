@@ -2,6 +2,7 @@
 #include "Timer.h"
 #include "Manager.h"
 #include "NpcSession.h"
+#include "MapSession.h";
 #include "GameManager.h";
 #include "PlayerSession.h";
 #include "NetworkManager.h";
@@ -13,6 +14,14 @@ PlayerSession::~PlayerSession()
 {
 	lock_guard<mutex> lock(m_npcViewListLock);
 	m_npcViewList.clear();
+}
+
+void PlayerSession::SetPos(int y, int x)
+{
+	GameManager* gameManager = Manager::GetInstance().GetGameManager();
+	Creature::SetPos(y, x);
+	Position nextPos{ y, x };
+	gameManager->GetMapSession()->ChangeSection(0, m_objectID, m_pos, nextPos);
 }
 
 void PlayerSession::SetRandomPos()
@@ -118,75 +127,119 @@ void PlayerSession::RemoveViewNPCList(int objID)
 void PlayerSession::UpdateViewList()
 {
 	if (GetState() != PlayerState::CT_INGAME) return;
+	UpdatePlayerViewList();
+	UpdateNpcViewList();
+}
+
+void PlayerSession::UpdatePlayerViewList()
+{
 	GameManager* gameManager = Manager::GetInstance().GetGameManager();
 	PlayerSocketHandler* myNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(m_objectID);
 	m_viewListLock.lock();
 	auto prevViewList = m_viewList;
-	auto prevNpcViewList = m_npcViewList;
 	m_viewListLock.unlock();
-
 	unordered_set<int> newViewList;
-	unordered_set<int> newNpcViewList;
 
-	for (int i = 0; i < MAX_USER; ++i)
+	unordered_set<int> nearUserList;
+	gameManager->GetMapSession()->GetUserInNearSection(this->m_pos, nearUserList);
+	for (int pId : nearUserList)
 	{
-		PlayerSession* player = gameManager->GetPlayerSession(i);
-		PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(i);
+		if (pId == m_objectID) continue;
+		PlayerSession* player = gameManager->GetPlayerSession(pId);
+		PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(pId);
 		if (player == nullptr) continue;
-		if (i == m_objectID) continue;
-
-		PlayerState st = player->GetState();
-		if (st != PlayerState::CT_INGAME) continue;
-		if (CanSee(player))	// 현재 내 시야에서 보이면
+		if (player->GetState() != PlayerState::CT_INGAME) continue;
+		if (CanSee(player)) // 현재 내 시야 내에 있으면
 		{
-			if (prevViewList.count(player->GetId()) == 0) // 이전에는 없었으면 추가
+			if (prevViewList.find(pId) == prevViewList.end())
 			{
+				// 이전에는 내 시야에 없었으면 클라이언트에 추가 요청
 				player->AddViewList(m_objectID);
 				pNetwork->send_add_object_packet(this);
 				myNetwork->send_add_object_packet(player);
 			}
-			// 있었으면 움직였다는 것을 알려줌
+			else
+				prevViewList.erase(pId);
 			pNetwork->send_move_object_packet(this);
-			newViewList.emplace(i);
+			newViewList.insert(pId);
 		}
-		else	// 내 시야에서 없으면
+		else
 		{
-			if (prevViewList.count(i) != 0)	// 이전에는 있었으면 삭제
+			if (prevViewList.find(pId) != prevViewList.end())
 			{
+				// 이전에는 있었는데 현재는 없으면
 				player->RemoveViewList(m_objectID);
 				pNetwork->send_remove_object_packet(this);
 				myNetwork->send_remove_object_packet(player);
+				prevViewList.erase(pId);
 			}
 		}
 	}
 
-	for (int i = 0; i < MAX_NPC; ++i)
+	// 현재 같은 Section에 없는데 이전에는 시야에 있었을 때 ex) 로그아웃, Teleport 등
+	for (int pId : prevViewList)
 	{
-		NpcSession* npc = gameManager->GetNpcSession(i);
-		if (npc == nullptr) continue;
-		if (npc->GetHp() < FLT_EPSILON) continue;
-		if (CanSee(npc))	// 현재 내 시야에서 보이면
-		{
-			if (prevNpcViewList.count(i) == 0) // 이전에는 없었으면 추가
-			{
-				npc->AddViewList(m_objectID);
-				myNetwork->send_add_npc_packet(npc);
-			}
-			newNpcViewList.emplace(i);
-		}
-		else	// 내 시야에서 없으면
-		{
-			if (prevNpcViewList.count(i) != 0)	// 이전에는 있었으면 삭제
-			{
-				npc->RemoveViewList(m_objectID);
-				myNetwork->send_remove_npc_object_packet(npc);
-			}
-		}
+		PlayerSession* player = gameManager->GetPlayerSession(pId);
+		if (CanSee(player)) continue;
+		PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(pId);
+		player->RemoveViewList(m_objectID);
+		pNetwork->send_remove_object_packet(this);
+		myNetwork->send_remove_object_packet(player);
 	}
 
 	m_viewListLock.lock();
-	m_viewList = newViewList;
-	m_npcViewList = newNpcViewList;
+	m_viewList = std::move(newViewList);
+	m_viewListLock.unlock();
+}
+
+void PlayerSession::UpdateNpcViewList()
+{
+	GameManager* gameManager = Manager::GetInstance().GetGameManager();
+	PlayerSocketHandler* myNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(m_objectID);
+	m_viewListLock.lock();
+	auto prevNpcViewList = m_npcViewList;
+	m_viewListLock.unlock();
+
+	unordered_set<int> newNpcViewList;
+	unordered_set<int> nearNpcList;
+	gameManager->GetMapSession()->GetNpcInNearSection(this->m_pos, nearNpcList);
+
+	for (int nId : nearNpcList)
+	{
+		NpcSession* npc = gameManager->GetNpcSession(nId);
+		if (npc == nullptr) continue;
+		if (npc->GetHp() < FLT_EPSILON) continue;
+		if (CanSee(npc))
+		{
+			if (prevNpcViewList.find(nId) == prevNpcViewList.end())
+			{
+				npc->AddViewList(m_objectID);
+				myNetwork->send_add_npc_packet(npc);
+				prevNpcViewList.erase(nId);
+			}
+			newNpcViewList.emplace(nId);
+		}
+		else
+		{
+			if (prevNpcViewList.find(nId) != prevNpcViewList.end())
+			{
+				npc->RemoveViewList(m_objectID);
+				myNetwork->send_remove_npc_object_packet(npc);
+				prevNpcViewList.erase(nId);
+			}
+		}
+	}
+
+	for (int nId : prevNpcViewList)
+	{
+		NpcSession* npc = gameManager->GetNpcSession(nId);
+		if (CanSee(npc)) continue;
+		npc->RemoveViewList(m_objectID);
+		myNetwork->send_remove_npc_object_packet(npc);
+	}
+
+	m_viewListLock.lock();
+	m_npcViewList = std::move(newNpcViewList);
 	m_viewListLock.unlock();
 }
 

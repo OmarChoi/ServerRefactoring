@@ -15,7 +15,8 @@ public:
     virtual ~NpcSession();
     void AddViewList(int objID) override;
     void RemoveViewList(int objID) override;
-
+    void SetPos(int y, int x) override;
+    void SetPos(Position pos) override { SetPos(pos.yPos, pos.xPos); }
 protected:
     void UpdateViewList() override;
     bool CanSee(const Creature* other) override;

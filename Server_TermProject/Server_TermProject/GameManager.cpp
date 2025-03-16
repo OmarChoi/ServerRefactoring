@@ -64,6 +64,7 @@ void GameManager::Init()
 			} while (yPos < SafeZoneSize && xPos < SafeZoneSize || !CanGo(yPos, xPos));
 
 			m_ppNpcSession[i]->InitPosition({ yPos, xPos });
+			m_mapSession->ChangeSection(1, i, { -1, -1 }, { yPos, xPos });
 		}
 	}
 	std::cout << "Npc Object initialization complete.\n";

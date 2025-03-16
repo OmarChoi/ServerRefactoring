@@ -17,6 +17,8 @@ public:
 	void SetExp(int exp) { m_exp = exp; }
 	int GetExp() const { return m_exp; }
 
+	virtual void SetPos(int y, int x);
+	virtual void SetPos(Position pos) { SetPos(pos.yPos, pos.xPos); }
 	void SetRandomPos();
 
 	void SetState(PlayerState state);
@@ -34,6 +36,8 @@ public:
 	void AddViewNPCList(int objID);
 	void RemoveViewNPCList(int objID);
 	virtual void UpdateViewList() override;
+	void UpdatePlayerViewList();
+	void UpdateNpcViewList();
 private:
 	int GetExpRequirement(int level);
 };

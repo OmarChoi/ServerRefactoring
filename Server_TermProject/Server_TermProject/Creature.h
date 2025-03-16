@@ -24,8 +24,8 @@ public:
 	Creature();
 	virtual ~Creature();
 
-	void SetPos(int y, int x);
-	void SetPos(Position pos) { SetPos(pos.yPos, pos.xPos); }
+	virtual void SetPos(int y, int x);
+	virtual void SetPos(Position pos) { SetPos(pos.yPos, pos.xPos); }
 	Position GetPos() const { return m_pos; }
 
 	void SetObjId(int i) { m_objectID = i; }

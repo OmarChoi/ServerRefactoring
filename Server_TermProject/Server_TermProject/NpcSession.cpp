@@ -4,6 +4,7 @@
 #include "Manager.h"
 #include "NormalNpc.h"
 #include "NpcSession.h"
+#include "MapSession.h";
 #include "GameManager.h";
 #include "PlayerSession.h"
 #include "NetworkManager.h"
@@ -46,6 +47,14 @@ void NpcSession::RemoveViewList(int objID)
 	std::lock_guard<std::mutex> lock(m_viewListLock);
 	if (m_viewList.find(objID) != m_viewList.end())
 		m_viewList.erase(objID);
+}
+
+void NpcSession::SetPos(int y, int x)
+{
+	GameManager* gameManager = Manager::GetInstance().GetGameManager();
+	Creature::SetPos(y, x);
+	Position nextPos{ y, x };
+	gameManager->GetMapSession()->ChangeSection(0, m_objectID, m_pos, nextPos);
 }
 
 void NpcSession::NpcSession::UpdateViewList()
@@ -141,7 +150,8 @@ void NpcSession::ActiveNpc()
 void NpcSession::InitPosition(Position pos)
 {
 	m_spawnPos = pos;
-	SetPos(pos);
+	m_lastMoveTime = chrono::high_resolution_clock::now();
+	m_pos.yPos = pos.yPos; m_pos.xPos = pos.xPos;
 }
 
 void NpcSession::ReleaseTarget()
