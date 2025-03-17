@@ -66,34 +66,51 @@ void NpcSession::NpcSession::UpdateViewList()
 
 	bool targetValid = false;
 	unordered_set<int> newViewList;
-	for (int i = 0; i < MAX_USER; ++i)
+	unordered_set<int> nearUserList;
+	gameManager->GetMapSession()->GetUserInNearSection(this->m_pos, nearUserList);
+	
+	for (int pId : nearUserList)
 	{
-		PlayerSession* player = gameManager->GetPlayerSession(i);
-		PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(i);
+		PlayerSession* player = gameManager->GetPlayerSession(pId);
+		PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(pId);
 		if (player == nullptr) continue;
 		if (player->GetState() != PlayerState::CT_INGAME) continue;
-		if (CanSee(player))	// 현재 내 시야에서 보이면
+		if (CanSee(player)) // 현재 내 시야 내에 있으면
 		{
-			if (prevViewList.count(player->GetId()) == 0) // 이전에는 없었으면 추가
+			if (prevViewList.find(pId) == prevViewList.end())
 			{
 				player->AddViewNPCList(m_objectID);
 				pNetwork->send_add_npc_packet(this);
 			}
 			else
 			{
-				if (i == m_targetID)
+				if (pId == m_targetID)
 					targetValid = true;
 				pNetwork->send_npc_move_object_packet(this);
+				prevViewList.erase(pId);
 			}
-			newViewList.insert(i);
+			newViewList.insert(pId);
 		}
-		else	// 내 시야에서 없으면
+		else
 		{
-			if (prevViewList.count(player->GetId()) != 0)	// 이전에는 있었으면 삭제
+			if (prevViewList.find(pId) != prevViewList.end())
 			{
 				player->RemoveViewNPCList(m_objectID);
 				pNetwork->send_remove_npc_object_packet(this);
+				prevViewList.erase(pId);
 			}
+		}
+	}
+
+	for (int pId : prevViewList)
+	{
+		// 이전에 Npc 시야에 있었는데 현재 인근 Section에 존재하지 않음
+		PlayerSession* player = gameManager->GetPlayerSession(pId);
+		if (player->GetState() == PlayerState::CT_INGAME)
+		{
+			PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(pId);
+			player->RemoveViewNPCList(m_objectID);
+			pNetwork->send_remove_npc_object_packet(this);
 		}
 	}
 

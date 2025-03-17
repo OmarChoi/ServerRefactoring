@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Manager.h"
 #include "NpcSession.h"
+#include "MapSession.h"
 #include "GameManager.h"
 #include "PlayerSession.h"
 #include "DataBaseManager.h"
@@ -117,6 +118,7 @@ void PlayerSocketHandler::VerifyUserAccount(const char* userName)
 		player->SetMaxHp(10'000);
 		player->SetRandomPos();
 		ActivatePlayer(player);
+		manager.GetGameManager()->GetMapSession()->ChangeSection(0, m_playerID, { -1, -1 }, player->GetPos());
 		return;
 	}
 	strncpy_s(name, userName, NAME_SIZE);
@@ -129,6 +131,7 @@ void PlayerSocketHandler::VerifyUserAccount(const char* userName)
 		send_login_fail_packet();
 		return;
 	}
+	manager.GetGameManager()->GetMapSession()->ChangeSection(0, m_playerID, { -1, -1 }, player->GetPos());
 	ActivatePlayer(player);
 }
 

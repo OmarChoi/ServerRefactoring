@@ -180,10 +180,12 @@ void PlayerSession::UpdatePlayerViewList()
 	for (int pId : prevViewList)
 	{
 		PlayerSession* player = gameManager->GetPlayerSession(pId);
-		if (CanSee(player)) continue;
-		PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(pId);
-		player->RemoveViewList(m_objectID);
-		pNetwork->send_remove_object_packet(this);
+		if (player->GetState() == PlayerState::CT_INGAME)
+		{
+			PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(pId);
+			player->RemoveViewList(m_objectID);
+			pNetwork->send_remove_object_packet(this);
+		}
 		myNetwork->send_remove_object_packet(player);
 	}
 
