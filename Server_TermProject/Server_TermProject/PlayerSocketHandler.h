@@ -10,9 +10,12 @@ private:
 	int								m_playerID;
 
 	unsigned int					m_moveTime;
+
+	PlayerSession*					m_playerSession;
 public:
 	PlayerSocketHandler();
-	PlayerSocketHandler(SOCKET socket, int playerID) : m_socket(socket), m_remainPacket(0), m_playerID(playerID), m_moveTime(0) { };
+	PlayerSocketHandler(SOCKET socket, int playerID) : m_socket(socket), m_remainPacket(0), m_playerID(playerID), 
+		m_moveTime(0), m_playerSession(nullptr) { };
 	~PlayerSocketHandler() {};
 
 public:
@@ -21,10 +24,11 @@ public:
 	void ProcessPacket(DWORD recvSize, OVER_EXP* over);
 
 private:
-	void ActivatePlayer(PlayerSession* pPlayer);
+	void ActivatePlayer();
 	void VerifyUserAccount(const char* userName);
-public:
+	void Disconnect();
 
+public:
 	void SendPacket(void* packet);
 	void send_add_object_packet(const PlayerSession* pPlayer);
 	void send_add_npc_packet(const NpcSession* pNpc);
@@ -34,8 +38,8 @@ public:
 	void send_npc_move_object_packet(const NpcSession* pNpc);
 	void send_chat_packet(int objId, const char* mess, char chatType);
 
-	void send_login_info_packet(const PlayerSession* pPlayer);
+	void send_login_info_packet();
 	void send_login_ok_packet();
 	void send_login_fail_packet();
-	void send_stat_change_packet(const PlayerSession* pPlayer);
+	void send_stat_change_packet();
 };

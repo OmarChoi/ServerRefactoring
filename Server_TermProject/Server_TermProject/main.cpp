@@ -84,7 +84,9 @@ void WorkerThread()
 		{
 			// GameManager에 존재하는 PlayerSession을 순회하여 플레이어 데이터 저장할 수 있는 함수 추가
 			// manager.GetDataBaseManager()->UpdatePlayerData();
-			g_Timer.AddTimer(99999, chrono::system_clock::now() + 60s, TIMER_TYPE::SaveData);
+			// g_Timer.AddTimer(99999, chrono::system_clock::now() + 60s, TIMER_TYPE::SaveData);
+			// if (ex_over != NULL)
+			// 	delete ex_over;
 			break;
 		}
 		default:

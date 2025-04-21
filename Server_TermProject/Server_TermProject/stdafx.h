@@ -19,6 +19,7 @@
 #include <stack>
 #include <random>
 #include <algorithm>
+#include <shared_mutex>
 #include <concurrent_unordered_set.h>
 #include <concurrent_priority_queue.h>
 
@@ -60,20 +61,6 @@ enum class TIMER_TYPE
 	SaveData
 };
 
-enum class MonsterType
-{
-	Unknown = 0,
-	Slime = 1,
-	Goblin = 2,
-	Orc = 3
-};
-
-enum class MonsterBehavior
-{
-	Normal = 0,
-	Agro = 1,
-};
-
 enum class PlayerState 
 { 
 	CT_FREE, 
@@ -81,18 +68,10 @@ enum class PlayerState
 	CT_INGAME 
 };
 
-enum class STATE
+enum class ObjectType
 {
-	IDLE,
-	MOVE,
-	ATTACK,
-	DIE,
-};
-
-enum OBJ_TYPE
-{
-	OT_PLAYER = 0,
-	OT_NPC = MAX_USER
+	Player = 0,
+	Npc = 1
 };
 
 enum CHAT_TYPE : char
@@ -109,12 +88,12 @@ struct Position
 	Position() : yPos(0), xPos(0) {};
 	Position(int y, int x) : yPos(y), xPos(x) {};
 
-	bool operator == (const Position& other)
+	bool operator == (const Position& other) const
 	{
 		return yPos == other.yPos && xPos == other.xPos;
 	}
 
-	bool operator != (const Position& other)
+	bool operator != (const Position& other) const
 	{
 		return !(*this == other);
 	}
@@ -142,12 +121,72 @@ struct Position
 	}
 };
 
-const array<Position, MOVE_DIRECTION> movements = {
+namespace std {
+	template<>
+	struct hash<Position>
+	{
+		size_t operator()(const Position& p) const
+		{
+			return (std::hash<int>()(p.yPos) << 16) ^ std::hash<int>()(p.xPos);
+		}
+	};
+}
+
+const array<Position, MOVE_DIRECTION> movements = 
+{
 	Position {-1, 0},		// UP 
 	Position {0, 1},		// RIGHT,
 	Position {1, 0},		// Down
 	Position {0, -1}		// LEFT
 };
+
+namespace Monster
+{
+	enum class Type
+	{
+		Unknown = 0,
+		Slime = 1,
+		Goblin = 2,
+		Orc = 3,
+		Cnt
+	};
+
+	enum class Behavior
+	{
+		Normal = 0,
+		Agro = 1,
+		Cnt
+	};
+
+	enum class State
+	{
+		Idle = 0,
+		Roaming = 1,
+		Chase = 2,
+		Attack = 3,
+		Die = 4,
+		Cnt = 5
+	};
+
+	struct Info
+	{
+		Type type;
+		Behavior behavior;
+		int level;
+		float hp;
+		int damage;
+		float attackRange;
+		float speed;
+	};
+
+	inline array<Info, static_cast<size_t>(Type::Cnt)> InfoTable =
+	{
+		Info{ Type::Unknown, Behavior::Normal, -1, -1.0f, -1, -1.0f, -1.0f },
+		Info{ Type::Slime,   Behavior::Normal, 1,  100.0f, 10, 1.0f,  0.8f },
+		Info{ Type::Goblin,  Behavior::Agro,   10, 200.0f, 20, 1.0f,  1.2f },
+		Info{ Type::Orc,     Behavior::Agro,   20, 300.0f, 30, 2.0f,  1.0f }
+	};
+}
 
 class OVER_EXP {
 public:
@@ -191,11 +230,11 @@ namespace Utils
 		return abs(destPos.yPos - startPos.yPos) + abs(destPos.xPos - startPos.xPos);
 	}
 
-	inline string GetMonsterName(MonsterType type)
+	inline string GetMonsterName(Monster::Type type)
 	{
-		if (type == MonsterType::Slime) return "Slime";
-		else if (type == MonsterType::Goblin) return "Goblin";
-		else if (type == MonsterType::Orc) return "Orc";
+		if (type == Monster::Type::Slime) return "Slime";
+		else if (type == Monster::Type::Goblin) return "Goblin";
+		else if (type == Monster::Type::Orc) return "Orc";
 		else return "UnKnown";
 	}
 }

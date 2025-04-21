@@ -5,12 +5,6 @@ constexpr int S_HEIGHT = 100;
 class Tile;
 class Section;
 
-enum class ListType
-{
-	Player = 0,
-	Npc = 1
-};
-
 class MapSession
 {
 private:
@@ -27,7 +21,7 @@ public:
 
 public:
 	// Section
-	void ChangeSection(int type, int objId, Position prevPos, Position nextPos);
+	void ChangeSection(ObjectType type, int objId, Position prevPos, Position nextPos);
 	pair<int, int> GetSectionIndex(int yPos, int xPos) const;
 	pair<int, int> GetSectionIndex(Position pos) const;
 	void GetUserInNearSection(int sectionY, int sectionX, unordered_set<int>& nearList);
@@ -37,6 +31,6 @@ public:
 
 private:
 	bool IsValidSection(int sectionY, int sectionX);
-	void GetCreatureInNearSection(ListType type, int sectionY, int sectionX, unordered_set<int>& nearList);
+	void GetCreatureInNearSection(ObjectType type, int sectionY, int sectionX, unordered_set<int>& nearList);
 };
 

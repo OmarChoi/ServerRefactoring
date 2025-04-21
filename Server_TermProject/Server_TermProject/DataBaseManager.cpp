@@ -119,6 +119,7 @@ bool DataBaseManager::UpdatePlayerData(WCHAR* userID, int objID)
 {
     Manager& manager = Manager::GetInstance();
     PlayerSession* player = manager.GetGameManager()->GetPlayerSession(objID);
+    if (player == nullptr) return false;
     SQLRETURN retcode;
     SQLWCHAR szName[20];
     SQLINTEGER hp, level, exp, xPos, yPos;

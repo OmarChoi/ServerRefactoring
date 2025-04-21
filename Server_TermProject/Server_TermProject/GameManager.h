@@ -6,9 +6,9 @@ class MapSession;
 class GameManager
 {
 private:
-	PlayerSession**				m_ppPlayerSession;
-	NpcSession**				m_ppNpcSession;
-	MapSession*					m_mapSession;
+	array<PlayerSession*, MAX_USER> m_ppPlayerSession;
+	array<NpcSession*, MAX_NPC>		m_ppNpcSession;
+	MapSession*						m_mapSession = nullptr;
 
 public:
 	// NPCSession
@@ -20,10 +20,12 @@ public:
 	void Init();
 	void AddPlayerSession(int playerId, string playerName, int yPos, int xPos,
 		float hp, float maxHp, int exp, int level);
-	PlayerSession* GetPlayerSession(int pId) { return m_ppPlayerSession[pId]; }
-	NpcSession* GetNpcSession(int objId) { return m_ppNpcSession[objId]; }
-	MapSession* GetMapSession() { return m_mapSession; }
+	void RemovePlayerSession(int pId) { m_ppPlayerSession[pId] = nullptr; }
+	PlayerSession* GetPlayerSession(int pId);
+	NpcSession* GetNpcSession(int objId);
 
+public:
+	MapSession* GetMapSession() { return m_mapSession; }
 	bool CanGo(Position pos) const;
 	bool CanGo(int yPos, int xPos) const;
 	int GetTileCost(Position pos);

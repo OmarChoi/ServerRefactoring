@@ -48,7 +48,6 @@ void PlayerSocketHandler::ProcessPacket(DWORD recvDataSize, OVER_EXP* over)
 void PlayerSocketHandler::ApplyPacketData(char* packet)
 {
 	GameManager* gameManager = Manager::GetInstance().GetGameManager();
-	PlayerSession* player = gameManager->GetPlayerSession(m_playerID);
 	switch (packet[2]) {
 	case CS_LOGIN:
 	{
@@ -58,16 +57,16 @@ void PlayerSocketHandler::ApplyPacketData(char* packet)
 	}
 	case CS_MOVE:
 	{
-		if (player->GetState() != PlayerState::CT_INGAME) return;
+		if (m_playerSession == nullptr) return;
 		CS_MOVE_PACKET* p = reinterpret_cast<CS_MOVE_PACKET*>(packet);
-		Position nextPos = player->GetPos() + movements[p->direction];
+		Position nextPos = m_playerSession->GetPos() + movements[p->direction];
 		m_moveTime = p->move_time;
-		if (gameManager->CanGo(nextPos) && player->IsActive())
+		if (gameManager->CanGo(nextPos) && m_playerSession->IsActive())
 		{
-			player->SetPos(nextPos);
-			player->UpdateViewList();
+			m_playerSession->SetPos(nextPos);
+			m_playerSession->UpdateViewList();
 		}
-		send_move_object_packet(player);
+		send_move_object_packet(m_playerSession);
 		break;
 	}
 	case CS_CHAT:
@@ -76,13 +75,14 @@ void PlayerSocketHandler::ApplyPacketData(char* packet)
 	}
 	case CS_ATTACK:
 	{
-		if (player->GetState() != PlayerState::CT_INGAME) return;
-		if (player->IsActive() == false) return;
-		player->Attack();
+		if (m_playerSession == nullptr) return;
+		if (m_playerSession->IsActive() == false) return;
+		m_playerSession->Attack();
 		break;
 	}
 	case CS_LOGOUT:
 	{
+		Disconnect();
 		break;
 	}
 	default:
@@ -90,70 +90,80 @@ void PlayerSocketHandler::ApplyPacketData(char* packet)
 	}
 }
 
-void PlayerSocketHandler::ActivatePlayer(PlayerSession* pPlayer)
+void PlayerSocketHandler::ActivatePlayer()
 {
-	pPlayer->SetObjId(m_playerID);
-	pPlayer->SetActive(true);
-	pPlayer->SetState(PlayerState::CT_INGAME);
-	pPlayer->UpdateViewList();
+	m_playerSession->SetObjId(m_playerID);
+	m_playerSession->SetActive(true);
+	m_playerSession->SetState(PlayerState::CT_INGAME);
 	send_login_ok_packet();
-	send_login_info_packet(pPlayer);
+	send_login_info_packet();
+	m_playerSession->UpdateViewList();
 }
 
 void PlayerSocketHandler::VerifyUserAccount(const char* userName)
 {
 	Manager& manager = Manager::GetInstance();
-	PlayerSession* player = manager.GetGameManager()->GetPlayerSession(m_playerID);
-
-	// 함수로 따로 분리해줄 필요성을 느낌
+	m_playerSession = manager.GetGameManager()->GetPlayerSession(m_playerID);
 	WCHAR nameForDB[NAME_SIZE];
 	char name[NAME_SIZE];
 	
 	if (strncmp(userName, "StressTest", 10) == 0)
 	{
-		player->SetName(userName);
-		player->SetLevel(1);
-		player->SetExp(0);
-		player->SetHp(10'000);
-		player->SetMaxHp(10'000);
-		player->SetRandomPos();
-		ActivatePlayer(player);
-		manager.GetGameManager()->GetMapSession()->ChangeSection(0, m_playerID, { -1, -1 }, player->GetPos());
+		m_playerSession->Init(this);
+		m_playerSession->SetName(userName);
+		m_playerSession->SetLevel(1);
+		m_playerSession->SetExp(0);
+		m_playerSession->SetHp(10'000);
+		m_playerSession->SetMaxHp(10'000);
+		m_playerSession->SetRandomPos();
+		ActivatePlayer();
+		manager.GetGameManager()->GetMapSession()->ChangeSection(ObjectType::Player, m_playerID, { -1, -1 }, m_playerSession->GetPos());
 		return;
 	}
 	strncpy_s(name, userName, NAME_SIZE);
 	MultiByteToWideChar(CP_UTF8, 0, userName, -1, nameForDB, NAME_SIZE);
 
-	player->SetName(userName);
-	if (manager.GetDataBaseManager()->GetUserData(nameForDB, player) == false)
+	m_playerSession->SetName(userName);
+	if (manager.GetDataBaseManager()->GetUserData(nameForDB, m_playerSession) == false)
 	{
-		ZeroMemory(player, sizeof(PlayerSession));
+		ZeroMemory(m_playerSession, sizeof(PlayerSession));
 		send_login_fail_packet();
+		// m_playerSession Release
 		return;
 	}
-	manager.GetGameManager()->GetMapSession()->ChangeSection(0, m_playerID, { -1, -1 }, player->GetPos());
-	ActivatePlayer(player);
+	m_playerSession->Init(this);
+	manager.GetGameManager()->GetMapSession()->ChangeSection(ObjectType::Player, m_playerID, { -1, -1 }, m_playerSession->GetPos());
+	ActivatePlayer();
+}
+
+void PlayerSocketHandler::Disconnect()
+{
+	// 해당 클라이언트가 접속해있는 캐릭터 접속 종료
+	// 소켓 연결 끊기
+	// ObjectPool에 PlayerSocketHandler 반환
+	m_playerSession->LogOut();
+	m_playerSession = nullptr;
 }
 
 void PlayerSocketHandler::SendPacket(void* packet)
 {
-	// OVER_EXP을 Object Pooling을 이용하여 new하지 않고 사용할 수 있게 수정해도 괜찮을듯.
+	// Pooling
 	OVER_EXP* sendData = new OVER_EXP{ reinterpret_cast<char*>(packet) };
 	WSASend(m_socket, &sendData->m_wsabuf, 1, 0, 0, &sendData->m_over, 0);
 }
 
-void PlayerSocketHandler::send_login_info_packet(const PlayerSession* pPlayer)
+void PlayerSocketHandler::send_login_info_packet()
 {
 	SC_LOGIN_INFO_PACKET sendData;
 	sendData.size = sizeof(SC_LOGIN_INFO_PACKET);
 	sendData.type = SC_LOGIN_INFO;
-	sendData.id = pPlayer->GetId();
-	sendData.hp = pPlayer->GetHp();
-	sendData.maxHp = pPlayer->GetMaxHp();
-	sendData.exp = pPlayer->GetExp();
-	sendData.level = pPlayer->GetLevel();
-	sendData.x = pPlayer->GetPos().xPos;
-	sendData.y = pPlayer->GetPos().yPos;
+	sendData.id = m_playerSession->GetId();
+	sendData.hp = static_cast<int>(m_playerSession->GetHp());
+	sendData.maxHp = static_cast<int>(m_playerSession->GetMaxHp());
+	sendData.exp = m_playerSession->GetExp();
+	sendData.level = m_playerSession->GetLevel();
+	sendData.x = m_playerSession->GetPos().xPos;
+	sendData.y = m_playerSession->GetPos().yPos;
 	SendPacket(&sendData);
 }
 
@@ -247,13 +257,13 @@ void PlayerSocketHandler::send_login_fail_packet()
 	SendPacket(&sendData);
 }
 
-void PlayerSocketHandler::send_stat_change_packet(const PlayerSession* pPlayer)
+void PlayerSocketHandler::send_stat_change_packet()
 {
 	SC_STAT_CHANGE_PACKET sendData;
 	sendData.size = sizeof(SC_STAT_CHANGE_PACKET);
 	sendData.type = SC_STAT_CHANGE;
-	sendData.hp = pPlayer->GetHp();
-	sendData.exp = pPlayer->GetExp();
-	sendData.level = pPlayer->GetLevel();
+	sendData.hp = static_cast<int>(m_playerSession->GetHp());
+	sendData.exp = m_playerSession->GetExp();
+	sendData.level = m_playerSession->GetLevel();
 	SendPacket(&sendData);
 }

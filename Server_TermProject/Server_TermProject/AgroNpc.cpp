@@ -1,39 +1,35 @@
 #include "stdafx.h"
 #include "AgroNpc.h"
+#include "Manager.h"
 #include "GameManager.h"
+#include "PlayerSession.h"
 
-void AgroNpc::AddViewList(int objID)
+void AgroNpc::Roaming()
 {
-	if (m_targetID == -1)
-		SetTarget(objID);
-	NpcSession::AddViewList(objID);
+	NpcSession::Roaming();
+	DetectTarget();
 }
 
-void AgroNpc::RemoveViewList(int objID)
+void AgroNpc::DetectTarget()
 {
-	NpcSession::RemoveViewList(objID);
-	if (m_targetID == objID)
-		SetNearTarget();
-}
-
-void AgroNpc::SetNearTarget()
-{
+	// 인근 Section 내부에 있는 PlayerCharacter 중에서 NPC_VIEW_RANGE 내에 있는지 확인
 	m_viewListLock.lock();
 	auto viewList = m_viewList;
 	m_viewListLock.unlock();
-	if (!viewList.empty())
-		SetTarget(*m_viewList.begin());
-}
+	int minDist = NPC_VIEW_RANGE;
+	int targetID = -1;
+	for (int i : viewList) 
+	{
+		PlayerSession* player = Manager::GetInstance().GetGameManager()->GetPlayerSession(i);
+		if (player == nullptr) continue;
+		int dist = Utils::GetDist(m_pos, player->GetPos());
+		if (dist < minDist)
+		{
+			minDist = dist;
+			targetID = i;
+		}
+	}
 
-void AgroNpc::CheckTarget()
-{
-	NpcSession::CheckTarget();
-	if (m_targetID == -1) 
-		SetNearTarget();
-}
-
-void AgroNpc::RespawnObject()
-{
-	NpcSession::RespawnObject();
-	SetNearTarget();
+	if (targetID != -1)
+		SetTarget(targetID);
 }

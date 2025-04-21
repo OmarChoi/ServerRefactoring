@@ -53,15 +53,17 @@ bool Creature::CanSee(const Creature* other)
 
 bool Creature::IsActive()
 {
-	std::lock_guard<std::mutex> lock(activeMutex);
 	return m_bActive;
 }
 
 void Creature::SetActive(bool active)
 {
 	// 초기화하는 경우 체력을 정상적으로 설정해주고 활성화 함수 호출.
-	if (m_hp < FLT_EPSILON && active == true) return;
-	std::lock_guard<std::mutex> lock(activeMutex);
+	if (m_hp < FLT_EPSILON && active == true)
+	{
+		m_hp = m_maxHp;
+		return;
+	}
 	m_bActive = active;
 }
 

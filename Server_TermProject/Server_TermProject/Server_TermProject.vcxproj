@@ -146,6 +146,7 @@
     <ClCompile Include="MapSession.cpp" />
     <ClCompile Include="NetworkManager.cpp" />
     <ClCompile Include="NormalNpc.cpp" />
+    <ClCompile Include="NpcFactory.cpp" />
     <ClCompile Include="NpcSession.cpp" />
     <ClCompile Include="PlayerSession.cpp" />
     <ClCompile Include="PlayerSocketHandler.cpp" />
@@ -168,6 +169,7 @@
     <ClInclude Include="MapSession.h" />
     <ClInclude Include="NetworkManager.h" />
     <ClInclude Include="NormalNpc.h" />
+    <ClInclude Include="NpcFactory.h" />
     <ClInclude Include="NpcSession.h" />
     <ClInclude Include="PlayerSession.h" />
     <ClInclude Include="PlayerSocketHandler.h" />

@@ -11,8 +11,7 @@ protected:
 	int                 m_damage;
 	Position			m_pos;
 
-	bool				m_bActive;
-	mutex				activeMutex;
+	atomic_bool			m_bActive;
 
 	unordered_set<int>				m_viewList;
 	mutex							m_viewListLock;

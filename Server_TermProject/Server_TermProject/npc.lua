@@ -1,6 +1,3 @@
-myid = 99999;
-move_count = 0;
-
 MonsterType = {
     Unknown = 0,
     Slime = 1,
@@ -13,7 +10,19 @@ MonsterBehavior = {
     Agro = 1,
 }
 
+MonsterState = {
+	IDLE = 0,
+	Roaming = 1,
+	Chase = 2,
+	Attack = 3,
+	Die = 4,
+};
+
 MonsterInfo = {
+    [MonsterType.Unknown] = {
+        type = MonsterType.Unknown, behavior = MonsterBehavior.Normal, 
+        level = -1, hp = -1.0, damage = -1, attackRange = -1, speed = -1
+    },
     [MonsterType.Slime] = {
         type = MonsterType.Slime, behavior = MonsterBehavior.Normal, level = 1,
         hp = 100.0, damage = 10, attackRange = 1, speed = 0.8
@@ -28,26 +37,35 @@ MonsterInfo = {
     }
 }
 
-function GetDistance(x1, y1, x2, y2)
-    local dx = x1 - x2
-    local dy = y1 - y2
-    return math.sqrt(dx * dx + dy * dy)
-end
-
 function GetMonsterInfo(monsterType)
-    return MonsterInfo[monsterType] 
-        or { type = MonsterType.Unknown, behavior = MonsterBehavior.Normal, 
-        level = -1, hp = -1.0, damage = -1, attackRange = -1, speed = -1 }
+    return MonsterInfo[monsterType] or MonsterInfo[MonsterType.Unknown]
 end
 
-function OnUpdate(hasTarget, distance, attackRange)
-    if hasTarget then
-        if distance <= attackRange then     
-            Attack()
-        else
-            ChaseTarget()
-        end
-    else
-        MoveRandom()
+function ChangeState(state, hp, hasTarget, attackRange, targetDist)
+    if hp <= 0.0 then
+        return MonsterState.Die
     end
+
+    if state == MonsterState.IDLE then
+        return MonsterState.Roaming
+
+    elseif state == MonsterState.Roaming and hasTarget then
+        return MonsterState.Chase
+
+    elseif state == MonsterState.Chase then
+        if not hasTarget then
+            return MonsterState.Roaming
+        elseif targetDist <= attackRange then
+            return MonsterState.Attack
+        end
+
+    elseif state == MonsterState.Attack then
+        if not hasTarget then
+            return MonsterState.Roaming
+        elseif targetDist > attackRange then
+            return MonsterState.Chase
+        end
+    end
+
+    return state
 end

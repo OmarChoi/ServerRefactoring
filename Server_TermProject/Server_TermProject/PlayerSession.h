@@ -1,6 +1,7 @@
 #pragma once
 #include "Creature.h"
 
+class PlayerSocketHandler;
 class PlayerSession : public Creature
 {
 private:
@@ -10,6 +11,7 @@ private:
 	mutex							m_npcViewListLock;
 	PlayerState						m_state = PlayerState::CT_FREE;
 	mutex							m_stateLock;
+	PlayerSocketHandler*			m_pNetwork;
 public:
 	PlayerSession() {};
 	~PlayerSession();
@@ -29,8 +31,8 @@ public:
 	void ApplyDamage(int damage, int objId = -1) override;
 	void AddExp(int exp);
 	void Die() override;
-private:
-	void Init();
+public:
+	void Init(PlayerSocketHandler* socket);
 
 public:
 	void AddViewNPCList(int objID);
@@ -38,6 +40,11 @@ public:
 	virtual void UpdateViewList() override;
 	void UpdatePlayerViewList();
 	void UpdateNpcViewList();
+	void LogOut();
+
+private:
+	void UpdateDBInfo();
+
 private:
 	int GetExpRequirement(int level);
 };

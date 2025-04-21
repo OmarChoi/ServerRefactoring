@@ -102,6 +102,6 @@ void NetworkManager::UpdatePlayerInfo()
 		if (player == nullptr) continue;
 		if (player->GetState() != PlayerState::CT_INGAME) continue;
 		if (player->HasStatChanged() == false) continue;
-		m_ppPlayerSocketHandler[i]->send_stat_change_packet(player);
+		m_ppPlayerSocketHandler[i]->send_stat_change_packet();
 	}
 }

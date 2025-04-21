@@ -21,7 +21,7 @@ void PlayerSession::SetPos(int y, int x)
 	GameManager* gameManager = Manager::GetInstance().GetGameManager();
 	Creature::SetPos(y, x);
 	Position nextPos{ y, x };
-	gameManager->GetMapSession()->ChangeSection(0, m_objectID, m_pos, nextPos);
+	gameManager->GetMapSession()->ChangeSection(ObjectType::Player, m_objectID, m_pos, nextPos);
 }
 
 void PlayerSession::SetRandomPos()
@@ -38,8 +38,9 @@ void PlayerSession::SetRandomPos()
 	SetPos(yPos, xPos);
 }
 
-void PlayerSession::Init()
+void PlayerSession::Init(PlayerSocketHandler* socket)
 {
+	m_pNetwork = socket;
 }
 
 void PlayerSession::SetState(PlayerState state)
@@ -82,7 +83,6 @@ void PlayerSession::Attack()
 void PlayerSession::ApplyDamage(int damage, int objId)
 {
 	Creature::ApplyDamage(damage, objId);
-	PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(m_objectID);
 	m_statChanged.store(true, memory_order_relaxed);
 }
 
@@ -119,8 +119,9 @@ void PlayerSession::AddViewNPCList(int objID)
 void PlayerSession::RemoveViewNPCList(int objID)
 {
 	m_npcViewListLock.lock();
-	if (m_npcViewList.find(objID) != m_npcViewList.end())
-		m_npcViewList.erase(objID);
+	auto it = m_npcViewList.find(objID);
+	if (it != m_npcViewList.end())
+		m_npcViewList.erase(it);
 	m_npcViewListLock.unlock();
 }
 
@@ -134,21 +135,19 @@ void PlayerSession::UpdateViewList()
 void PlayerSession::UpdatePlayerViewList()
 {
 	GameManager* gameManager = Manager::GetInstance().GetGameManager();
-	PlayerSocketHandler* myNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(m_objectID);
 	m_viewListLock.lock();
 	auto prevViewList = m_viewList;
 	m_viewListLock.unlock();
 	unordered_set<int> newViewList;
-
 	unordered_set<int> nearUserList;
 	gameManager->GetMapSession()->GetUserInNearSection(this->m_pos, nearUserList);
 	for (int pId : nearUserList)
 	{
 		if (pId == m_objectID) continue;
 		PlayerSession* player = gameManager->GetPlayerSession(pId);
-		PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(pId);
 		if (player == nullptr) continue;
 		if (player->GetState() != PlayerState::CT_INGAME) continue;
+		PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(pId);
 		if (CanSee(player)) // 현재 내 시야 내에 있으면
 		{
 			if (prevViewList.find(pId) == prevViewList.end())
@@ -156,7 +155,7 @@ void PlayerSession::UpdatePlayerViewList()
 				// 이전에는 내 시야에 없었으면 클라이언트에 추가 요청
 				player->AddViewList(m_objectID);
 				pNetwork->send_add_object_packet(this);
-				myNetwork->send_add_object_packet(player);
+				m_pNetwork->send_add_object_packet(player);
 			}
 			else
 				prevViewList.erase(pId);
@@ -170,7 +169,7 @@ void PlayerSession::UpdatePlayerViewList()
 				// 이전에는 있었는데 현재는 없으면
 				player->RemoveViewList(m_objectID);
 				pNetwork->send_remove_object_packet(this);
-				myNetwork->send_remove_object_packet(player);
+				m_pNetwork->send_remove_object_packet(player);
 				prevViewList.erase(pId);
 			}
 		}
@@ -180,13 +179,14 @@ void PlayerSession::UpdatePlayerViewList()
 	for (int pId : prevViewList)
 	{
 		PlayerSession* player = gameManager->GetPlayerSession(pId);
+		if (player == nullptr) continue;
 		if (player->GetState() == PlayerState::CT_INGAME)
 		{
 			PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(pId);
 			player->RemoveViewList(m_objectID);
 			pNetwork->send_remove_object_packet(this);
 		}
-		myNetwork->send_remove_object_packet(player);
+		m_pNetwork->send_remove_object_packet(player);
 	}
 
 	m_viewListLock.lock();
@@ -197,10 +197,9 @@ void PlayerSession::UpdatePlayerViewList()
 void PlayerSession::UpdateNpcViewList()
 {
 	GameManager* gameManager = Manager::GetInstance().GetGameManager();
-	PlayerSocketHandler* myNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(m_objectID);
-	m_viewListLock.lock();
+	m_npcViewListLock.lock();
 	auto prevNpcViewList = m_npcViewList;
-	m_viewListLock.unlock();
+	m_npcViewListLock.unlock();
 
 	unordered_set<int> newNpcViewList;
 	unordered_set<int> nearNpcList;
@@ -216,7 +215,7 @@ void PlayerSession::UpdateNpcViewList()
 			if (prevNpcViewList.find(nId) == prevNpcViewList.end())
 			{
 				npc->AddViewList(m_objectID);
-				myNetwork->send_add_npc_packet(npc);
+				m_pNetwork->send_add_npc_packet(npc);
 				prevNpcViewList.erase(nId);
 			}
 			newNpcViewList.emplace(nId);
@@ -226,7 +225,7 @@ void PlayerSession::UpdateNpcViewList()
 			if (prevNpcViewList.find(nId) != prevNpcViewList.end())
 			{
 				npc->RemoveViewList(m_objectID);
-				myNetwork->send_remove_npc_object_packet(npc);
+				m_pNetwork->send_remove_npc_object_packet(npc);
 				prevNpcViewList.erase(nId);
 			}
 		}
@@ -237,12 +236,57 @@ void PlayerSession::UpdateNpcViewList()
 		NpcSession* npc = gameManager->GetNpcSession(nId);
 		if (CanSee(npc)) continue;
 		npc->RemoveViewList(m_objectID);
-		myNetwork->send_remove_npc_object_packet(npc);
+		m_pNetwork->send_remove_npc_object_packet(npc);
 	}
 
-	m_viewListLock.lock();
+	m_npcViewListLock.lock();
 	m_npcViewList = std::move(newNpcViewList);
-	m_viewListLock.unlock();
+	m_npcViewListLock.unlock();
+}
+
+void PlayerSession::LogOut()
+{
+	GameManager* gameManager = Manager::GetInstance().GetGameManager();
+	// gameManager->GetMapSession()->DeleteCreature(ObjectType::Player, m_pos.yPos, m_pos.xPos, m_objectID);
+
+	// DataBase에 플레이어 정보 갱신
+	UpdateDBInfo();
+	
+	// PlayerSession 반환
+	SetState(PlayerState::CT_FREE);
+
+	if (m_pNetwork) m_pNetwork = nullptr;
+	{
+		lock_guard<mutex> lock(m_npcViewListLock);
+		for (int nId : m_npcViewList)
+		{
+			NpcSession* npc = gameManager->GetNpcSession(nId);
+			if (npc == nullptr) continue;
+			if (npc->GetHp() < FLT_EPSILON) continue;
+			npc->RemoveViewList(m_objectID);
+		}
+		m_npcViewList.clear();
+	}
+	{
+		lock_guard<mutex> lock(m_viewListLock);
+		for (int pId : m_viewList) 
+		{
+			if (pId == m_objectID) continue;
+			PlayerSession* player = gameManager->GetPlayerSession(pId);
+			if (player == nullptr) continue;
+			if (player->GetState() != PlayerState::CT_INGAME) continue;
+			PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(pId);
+			player->RemoveViewList(m_objectID);
+			m_pNetwork->send_remove_object_packet(this);
+		}
+		m_viewList.clear();
+	}
+
+	gameManager->RemovePlayerSession(m_objectID);
+}
+
+void PlayerSession::UpdateDBInfo()
+{
 }
 
 int PlayerSession::GetExpRequirement(int level)
