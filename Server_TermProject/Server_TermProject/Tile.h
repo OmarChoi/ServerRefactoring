@@ -13,5 +13,11 @@ public:
 public:
 	bool CanGo() { return m_canGo; }
 	int GetCost() { return m_cost; }
+	void ChangeTile(int type, bool canGo, int cost) 
+	{ 
+		m_tileType = type; 
+		m_canGo = canGo;
+		m_cost = cost; 
+	}
 };
 

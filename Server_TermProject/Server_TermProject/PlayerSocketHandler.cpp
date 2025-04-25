@@ -66,7 +66,7 @@ void PlayerSocketHandler::ApplyPacketData(char* packet)
 			m_playerSession->SetPos(nextPos);
 			m_playerSession->UpdateViewList();
 		}
-		send_move_object_packet(m_playerSession);
+		send_move_object_packet(m_playerSession.get());
 		break;
 	}
 	case CS_CHAT:
@@ -94,10 +94,8 @@ void PlayerSocketHandler::ActivatePlayer()
 {
 	m_playerSession->SetObjId(m_playerID);
 	m_playerSession->SetActive(true);
-	m_playerSession->SetState(PlayerState::CT_INGAME);
 	send_login_ok_packet();
 	send_login_info_packet();
-	m_playerSession->UpdateViewList();
 }
 
 void PlayerSocketHandler::VerifyUserAccount(const char* userName)
@@ -118,6 +116,8 @@ void PlayerSocketHandler::VerifyUserAccount(const char* userName)
 		m_playerSession->SetRandomPos();
 		ActivatePlayer();
 		manager.GetGameManager()->GetMapSession()->ChangeSection(ObjectType::Player, m_playerID, { -1, -1 }, m_playerSession->GetPos());
+		m_playerSession->SetState(PlayerState::CT_INGAME);
+		m_playerSession->UpdateViewList();
 		return;
 	}
 	strncpy_s(name, userName, NAME_SIZE);
@@ -126,14 +126,16 @@ void PlayerSocketHandler::VerifyUserAccount(const char* userName)
 	m_playerSession->SetName(userName);
 	if (manager.GetDataBaseManager()->GetUserData(nameForDB, m_playerSession) == false)
 	{
-		ZeroMemory(m_playerSession, sizeof(PlayerSession));
+		manager.GetGameManager()->RemovePlayerSession(m_playerID);
 		send_login_fail_packet();
 		// m_playerSession Release
 		return;
 	}
 	m_playerSession->Init(this);
 	manager.GetGameManager()->GetMapSession()->ChangeSection(ObjectType::Player, m_playerID, { -1, -1 }, m_playerSession->GetPos());
-	ActivatePlayer();
+	ActivatePlayer(); 
+	m_playerSession->SetState(PlayerState::CT_INGAME);
+	m_playerSession->UpdateViewList();
 }
 
 void PlayerSocketHandler::Disconnect()
@@ -141,8 +143,15 @@ void PlayerSocketHandler::Disconnect()
 	// 해당 클라이언트가 접속해있는 캐릭터 접속 종료
 	// 소켓 연결 끊기
 	// ObjectPool에 PlayerSocketHandler 반환
+	if (m_playerSession == nullptr) return;
 	m_playerSession->LogOut();
-	m_playerSession = nullptr;
+	m_playerSession.reset();
+	{
+		lock_guard<mutex> lock(PrintLock);
+		cout << m_playerID << " Log Out\n";
+	}
+	auto gm = Manager::GetInstance().GetGameManager();
+	gm->RemovePlayerSession(m_playerID);
 }
 
 void PlayerSocketHandler::SendPacket(void* packet)

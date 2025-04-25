@@ -26,6 +26,7 @@ void Timer::ProcessTimer()
 				continue;
 			}
 			OVER_EXP* exover = new OVER_EXP;
+
 			switch (ev.m_Type)
 			{
 			case TIMER_TYPE::NpcUpdate:
@@ -50,3 +51,19 @@ void Timer::ProcessTimer()
 		this_thread::sleep_for(1ms);
 	}
 }
+
+void Timer::PrintTimerWork()
+ {
+ 	auto now = chrono::system_clock::now();
+ 	time_t now_time_t = chrono::system_clock::to_time_t(now);
+ 	auto elapsed = chrono::duration_cast<chrono::milliseconds>(now - lastLogTime);
+ 	if (elapsed > 330ms)
+ 	{
+ 		struct tm timeinfo;
+ 		localtime_s(&timeinfo, &now_time_t); // 안전한 방식
+ 		lock_guard<mutex> lock(PrintLock);
+ 		cout << put_time(&timeinfo, "%Y-%m-%d %H:%M:%S\t")
+ 			<< "Timer Work : " << m_timerQueue.size() << "\n";
+ 		lastLogTime = now;
+ 	}
+ }

@@ -49,7 +49,7 @@ void MapSession::Init()
 			x = 0;
 		}
 	}
-
+	CheckReachable();
 	for (int j = 0; j < W_HEIGHT / S_HEIGHT; ++j) 
 	{
 		for (int i = 0; i < W_WIDTH / S_WIDTH; ++i)
@@ -153,4 +153,49 @@ void MapSession::GetNpcInNearSection(Position pos, unordered_set<int>& nearList)
 {
 	pair<int, int> pair = GetSectionIndex(pos.yPos, pos.xPos);
 	GetCreatureInNearSection(ObjectType::Npc, pair.first, pair.second, nearList);
+}
+
+void MapSession::DeleteCreature(ObjectType type, int objId, Position pos)
+{
+	pair<int, int> section = GetSectionIndex(pos);
+	if (type == ObjectType::Player)
+	{
+		m_sections[section.first][section.second]->DeletePlayer(objId);
+	}
+	else
+	{
+		m_sections[section.first][section.second]->DeleteNpc(objId);
+	}
+}
+
+void MapSession::CheckReachable()
+{
+	vector<vector<bool>> visited(W_HEIGHT, vector<bool>(W_WIDTH, false));
+	queue<Position> q;
+	visited[0][0] = true;
+	q.emplace(0, 0);
+
+	while (!q.empty()) {
+		Position cPos = q.front();
+		q.pop();
+		for (int dir = 0; dir < 4; ++dir) {
+			Position nPos = cPos + movements[dir];
+			if (CanGo(nPos) == false) continue;
+			if (visited[nPos.yPos][nPos.xPos] == true) continue;
+			visited[nPos.yPos][nPos.xPos] = true;
+			q.emplace(nPos.yPos, nPos.xPos);
+		}
+	}
+
+	for (int j = 0; j < W_HEIGHT; ++j)
+	{
+		for (int i = 0; i < W_WIDTH; ++i)
+		{
+			if (visited[j][i] == false &&
+				CanGo({ j, i }) == true)
+			{
+				m_tiles[j][i]->ChangeTile(0, 0, 9999);
+			}
+		}
+	}
 }

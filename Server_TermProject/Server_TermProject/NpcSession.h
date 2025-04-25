@@ -1,5 +1,6 @@
 #pragma once
 #include "Creature.h"
+class PlayerSession;
 class NpcSession : public Creature
 {
 protected:
@@ -7,7 +8,7 @@ protected:
     Monster::Behavior                   m_behavior;
 
 protected:
-    atomic_int                          m_targetID;
+    atomic<shared_ptr<PlayerSession>>   m_targetSession;
     atomic<Monster::State>              m_currentState;
     Position                            m_spawnPos;
 
@@ -15,6 +16,8 @@ protected:
     stack<Position>                     m_path;
     mutex                               m_pathLock;
 
+private:
+    atomic_bool                         m_registUpdate;
 private:
     array<function<void()>, static_cast<size_t>(Monster::State::Cnt)> stateFunc;
 
@@ -30,7 +33,6 @@ public:
 
 protected:
     void UpdateViewList() override;
-    bool CanSee(const Creature* other) override;
     virtual bool CheckTarget();
 
 public:

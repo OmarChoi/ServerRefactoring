@@ -7,6 +7,7 @@
 #include "PlayerSession.h"
 #include "NetworkManager.h"
 #include "DataBaseManager.h"
+#include "PlayerSocketHandler.h"
 
 Timer g_Timer;
 
@@ -28,7 +29,12 @@ void WorkerThread()
 			}
 			else 
 			{
-				cout << "GQCS Error on client[" << key << "]\n";
+				{
+					lock_guard<mutex> lock(PrintLock);
+					cout << "GQCS Error on client[" << key << "]\n";
+				}
+				auto p = manager.GetNetworkManager()->GetPlayerNetwork(key);
+				p->Disconnect();
 				if (ex_over->m_compType == COMP_TYPE::Send) delete ex_over;
 			}
 			continue;
@@ -53,8 +59,9 @@ void WorkerThread()
 		}
 		case COMP_TYPE::NpcUpdate:
 		{
-			NpcSession* npc = manager.GetGameManager()->GetNpcSession(static_cast<int>(key));
-			npc->Update();
+			auto npc = manager.GetGameManager()->GetNpcSession(static_cast<int>(key));
+			if (npc != nullptr)
+				npc->Update();
 			if (ex_over != NULL)
 				delete ex_over;
 			break;
@@ -70,12 +77,20 @@ void WorkerThread()
 		case COMP_TYPE::RespawnObject:
 		{
 			int objID = static_cast<int>(key);
-			Creature* creature = nullptr;
-			if (objID < MAX_USER) 
+			auto gm = manager.GetGameManager();
+
+			shared_ptr<Creature> creature;
+			if (objID < MAX_USER)
+			{
 				creature = manager.GetGameManager()->GetPlayerSession(objID);
-			else
+			}
+			else 
+			{
 				creature = manager.GetGameManager()->GetNpcSession(objID - MAX_USER);
-			creature->RespawnObject();
+			}
+			if (creature)
+				creature->RespawnObject();
+
 			if (ex_over != NULL)
 				delete ex_over;
 			break;
@@ -110,7 +125,7 @@ int main()
 	Manager& manager = Manager::GetInstance();
 	vector <thread> worker_threads;
 	int num_threads = std::thread::hardware_concurrency();
-	for (int i = 0; i < num_threads - 1; ++i)
+	for (int i = 0; i < num_threads - 2; ++i)
 		worker_threads.emplace_back(WorkerThread);
 	thread timer_thread{ TimerThread };
 	for (auto& th : worker_threads)

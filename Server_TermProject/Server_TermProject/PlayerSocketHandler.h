@@ -11,22 +11,22 @@ private:
 
 	unsigned int					m_moveTime;
 
-	PlayerSession*					m_playerSession;
+	shared_ptr<PlayerSession>		m_playerSession;
 public:
 	PlayerSocketHandler();
-	PlayerSocketHandler(SOCKET socket, int playerID) : m_socket(socket), m_remainPacket(0), m_playerID(playerID), 
-		m_moveTime(0), m_playerSession(nullptr) { };
+	PlayerSocketHandler(SOCKET socket, int playerID) : m_socket(socket), 
+		m_remainPacket(0), m_playerID(playerID), m_moveTime(0) { };
 	~PlayerSocketHandler() {};
 
 public:
 	void CallRecv();
 	void ApplyPacketData(char* packet);
 	void ProcessPacket(DWORD recvSize, OVER_EXP* over);
+	void Disconnect();
 
 private:
 	void ActivatePlayer();
 	void VerifyUserAccount(const char* userName);
-	void Disconnect();
 
 public:
 	void SendPacket(void* packet);

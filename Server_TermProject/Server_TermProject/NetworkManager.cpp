@@ -7,19 +7,6 @@
 
 NetworkManager::~NetworkManager()
 {
-	if (m_ppPlayerSocketHandler != nullptr) 
-	{
-		for (int i = 0; i < MAX_USER; ++i) 
-		{
-			if (m_ppPlayerSocketHandler[i] != nullptr) 
-			{
-				delete m_ppPlayerSocketHandler[i];
-				m_ppPlayerSocketHandler[i] = nullptr;
-			}
-		}
-		delete[] m_ppPlayerSocketHandler;
-		m_ppPlayerSocketHandler = nullptr;
-	}
 	cout << "Close Socket" << endl;
 	closesocket(m_listenSocket);
 }
@@ -43,8 +30,6 @@ void NetworkManager::Init()
 	SOCKADDR_IN clientAddress;
 	int addrSize = sizeof(clientAddress);
 
-	m_ppPlayerSocketHandler = new PlayerSocketHandler* [MAX_USER];
-	
 	// 한개의 CompletionPort 생성
 	m_hIocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
 	CreateIoCompletionPort(reinterpret_cast<HANDLE>(m_listenSocket), m_hIocp, MAX_USER + 1, 0);
@@ -59,26 +44,31 @@ void NetworkManager::Init()
 	cout << "Network initialization complete.\n";
 }
 
+mutex									acceptLock;
 void NetworkManager::Accept()
 {
 	Manager& manager = Manager::GetInstance();
-	int nPlayer = manager.GetPlayerNum();
-	SOCKET newSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
-
-	if (nPlayer < MAX_USER)
+	
 	{
-		m_ppPlayerSocketHandler[nPlayer] = new PlayerSocketHandler(m_clientSocket, nPlayer);
-		CreateIoCompletionPort(reinterpret_cast<HANDLE>(m_clientSocket), m_hIocp, nPlayer, 0);
-		m_ppPlayerSocketHandler[nPlayer]->CallRecv();
+		lock_guard<mutex> lock(acceptLock);
+		int nPlayer = manager.GetPlayerNum();
+		SOCKET newSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
 
-		manager.AddPlayerIndex();
-		m_clientSocket = newSocket;
-	}
-	else
-	{
-		cout << "Max user exceeded.\n";
-		closesocket(newSocket); 
-		return;
+		if (nPlayer < MAX_USER)
+		{
+			m_ppPlayerSocketHandler[nPlayer] = new PlayerSocketHandler(m_clientSocket, nPlayer);
+			CreateIoCompletionPort(reinterpret_cast<HANDLE>(m_clientSocket), m_hIocp, nPlayer, 0);
+			m_ppPlayerSocketHandler[nPlayer]->CallRecv();
+
+			manager.AddPlayerIndex();
+			m_clientSocket = newSocket;
+		}
+		else
+		{
+			cout << "Max user exceeded.\n";
+			closesocket(newSocket); 
+			return;
+		}
 	}
 
 	ZeroMemory(&m_AcceptOver.m_over, sizeof(m_AcceptOver.m_over));
@@ -98,7 +88,7 @@ void NetworkManager::UpdatePlayerInfo()
 
 	for (int i = 0; i < nPlayerNum; ++i) 
 	{
-		PlayerSession* player = manager.GetGameManager()->GetPlayerSession(i);
+		auto player = manager.GetGameManager()->GetPlayerSession(i);
 		if (player == nullptr) continue;
 		if (player->GetState() != PlayerState::CT_INGAME) continue;
 		if (player->HasStatChanged() == false) continue;

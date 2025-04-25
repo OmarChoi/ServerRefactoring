@@ -19,22 +19,22 @@
     <Filter Include="Manager\InGame">
       <UniqueIdentifier>{57130fca-07ba-407b-8888-9e9cdc4ffe61}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Session">
-      <UniqueIdentifier>{5a083dac-3950-4cfd-a64e-7aec6c754b8f}</UniqueIdentifier>
+    <Filter Include="Timer">
+      <UniqueIdentifier>{e8547e96-2334-4fee-a91f-9531b3a34e63}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Session\MapSession">
+    <Filter Include="MapSession">
       <UniqueIdentifier>{d2a05129-94f7-4e60-be56-5b858031bb0e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Session\Creature">
+    <Filter Include="Creature">
       <UniqueIdentifier>{ebb36e6e-0f41-4695-84e0-e3754048c512}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Session\Creature\Player">
+    <Filter Include="Creature\Player">
       <UniqueIdentifier>{c4573c86-6b0c-4395-8ae0-9ecab4dc1e87}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Session\Creature\NPC">
+    <Filter Include="Creature\NPC">
       <UniqueIdentifier>{a09ef625-3d95-4917-abd9-2ac95d21e8d6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Session\Creature\NPC\NpcType">
+    <Filter Include="Creature\NPC\NpcType">
       <UniqueIdentifier>{6065901d-acdf-4f9a-8363-b8e94c98fba8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -45,14 +45,11 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Timer.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="PlayerSession.cpp">
-      <Filter>Session\Creature\Player</Filter>
+      <Filter>Creature\Player</Filter>
     </ClCompile>
     <ClCompile Include="PlayerSocketHandler.cpp">
-      <Filter>Session\Creature\Player</Filter>
+      <Filter>Creature\Player</Filter>
     </ClCompile>
     <ClCompile Include="Manager.cpp">
       <Filter>Manager</Filter>
@@ -61,49 +58,49 @@
       <Filter>Manager</Filter>
     </ClCompile>
     <ClCompile Include="Creature.cpp">
-      <Filter>Session\Creature</Filter>
+      <Filter>Creature</Filter>
     </ClCompile>
     <ClCompile Include="GameManager.cpp">
       <Filter>Manager\InGame</Filter>
     </ClCompile>
     <ClCompile Include="MapSession.cpp">
-      <Filter>Session\MapSession</Filter>
+      <Filter>MapSession</Filter>
     </ClCompile>
     <ClCompile Include="Tile.cpp">
-      <Filter>Session\MapSession</Filter>
+      <Filter>MapSession</Filter>
     </ClCompile>
     <ClCompile Include="DataBaseManager.cpp">
       <Filter>Manager</Filter>
     </ClCompile>
     <ClCompile Include="NpcSession.cpp">
-      <Filter>Session\Creature\NPC</Filter>
+      <Filter>Creature\NPC</Filter>
     </ClCompile>
     <ClCompile Include="AgroNpc.cpp">
-      <Filter>Session\Creature\NPC\NpcType</Filter>
+      <Filter>Creature\NPC\NpcType</Filter>
     </ClCompile>
     <ClCompile Include="NormalNpc.cpp">
-      <Filter>Session\Creature\NPC\NpcType</Filter>
+      <Filter>Creature\NPC\NpcType</Filter>
     </ClCompile>
     <ClCompile Include="Section.cpp">
-      <Filter>Session\MapSession</Filter>
+      <Filter>MapSession</Filter>
     </ClCompile>
     <ClCompile Include="NpcFactory.cpp">
-      <Filter>Session\Creature\NPC</Filter>
+      <Filter>Creature\NPC</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer.cpp">
+      <Filter>Timer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Timer.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="protocol_2023.h" />
     <ClInclude Include="PlayerSocketHandler.h">
-      <Filter>Session\Creature\Player</Filter>
+      <Filter>Creature\Player</Filter>
     </ClInclude>
     <ClInclude Include="PlayerSession.h">
-      <Filter>Session\Creature\Player</Filter>
+      <Filter>Creature\Player</Filter>
     </ClInclude>
     <ClInclude Include="Manager.h">
       <Filter>Manager</Filter>
@@ -112,34 +109,37 @@
       <Filter>Manager</Filter>
     </ClInclude>
     <ClInclude Include="Creature.h">
-      <Filter>Session\Creature</Filter>
+      <Filter>Creature</Filter>
     </ClInclude>
     <ClInclude Include="GameManager.h">
       <Filter>Manager\InGame</Filter>
     </ClInclude>
     <ClInclude Include="MapSession.h">
-      <Filter>Session\MapSession</Filter>
+      <Filter>MapSession</Filter>
     </ClInclude>
     <ClInclude Include="Tile.h">
-      <Filter>Session\MapSession</Filter>
+      <Filter>MapSession</Filter>
     </ClInclude>
     <ClInclude Include="DataBaseManager.h">
       <Filter>Manager</Filter>
     </ClInclude>
     <ClInclude Include="NpcSession.h">
-      <Filter>Session\Creature\NPC</Filter>
+      <Filter>Creature\NPC</Filter>
     </ClInclude>
     <ClInclude Include="AgroNpc.h">
-      <Filter>Session\Creature\NPC\NpcType</Filter>
+      <Filter>Creature\NPC\NpcType</Filter>
     </ClInclude>
     <ClInclude Include="NormalNpc.h">
-      <Filter>Session\Creature\NPC\NpcType</Filter>
+      <Filter>Creature\NPC\NpcType</Filter>
     </ClInclude>
     <ClInclude Include="Section.h">
-      <Filter>Session\MapSession</Filter>
+      <Filter>MapSession</Filter>
     </ClInclude>
     <ClInclude Include="NpcFactory.h">
-      <Filter>Session\Creature\NPC</Filter>
+      <Filter>Creature\NPC</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>Timer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

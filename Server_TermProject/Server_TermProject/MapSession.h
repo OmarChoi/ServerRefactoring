@@ -1,6 +1,6 @@
 #pragma once
-constexpr int S_WIDTH = 100;
-constexpr int S_HEIGHT = 100;
+constexpr int S_WIDTH = 16;
+constexpr int S_HEIGHT = 16;
 
 class Tile;
 class Section;
@@ -18,6 +18,8 @@ public:
 public:
 	bool CanGo(const Position pos);
 	int GetCost(const Position pos);
+private:
+	void CheckReachable();
 
 public:
 	// Section
@@ -29,6 +31,7 @@ public:
 	void GetNpcInNearSection(int sectionY, int sectionX, unordered_set<int>& nearList);
 	void GetNpcInNearSection(Position pos, unordered_set<int>& nearList);
 
+	void DeleteCreature(ObjectType type, int objId, Position pos);
 private:
 	bool IsValidSection(int sectionY, int sectionX);
 	void GetCreatureInNearSection(ObjectType type, int sectionY, int sectionX, unordered_set<int>& nearList);

@@ -6,9 +6,9 @@ class MapSession;
 class GameManager
 {
 private:
-	array<PlayerSession*, MAX_USER> m_ppPlayerSession;
-	array<NpcSession*, MAX_NPC>		m_ppNpcSession;
-	MapSession*						m_mapSession = nullptr;
+	array<shared_ptr<PlayerSession>, MAX_USER>	m_ppPlayerSession;
+	array<shared_ptr<NpcSession>, MAX_NPC>		m_ppNpcSession;
+	MapSession*									m_mapSession = nullptr;
 
 public:
 	// NPCSession
@@ -20,9 +20,9 @@ public:
 	void Init();
 	void AddPlayerSession(int playerId, string playerName, int yPos, int xPos,
 		float hp, float maxHp, int exp, int level);
-	void RemovePlayerSession(int pId) { m_ppPlayerSession[pId] = nullptr; }
-	PlayerSession* GetPlayerSession(int pId);
-	NpcSession* GetNpcSession(int objId);
+	void RemovePlayerSession(int pId) { m_ppPlayerSession[pId].reset(); }
+	shared_ptr<PlayerSession> GetPlayerSession(int pId) const;
+	shared_ptr<NpcSession> GetNpcSession(int objId)  const;
 
 public:
 	MapSession* GetMapSession() { return m_mapSession; }

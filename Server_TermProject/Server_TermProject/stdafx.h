@@ -9,6 +9,7 @@
 #include <thread>
 #include <vector>
 #include <mutex>
+#include <memory>
 #include <unordered_set>
 #include <chrono>
 #include <queue>
@@ -40,6 +41,7 @@ constexpr int NPC_VIEW_RANGE = 10;
 constexpr int SafeZoneSize = 10;
 inline thread_local std::mt19937 rng(std::random_device{}());
 
+inline mutex PrintLock;
 #define stressTest
 
 enum class COMP_TYPE
@@ -127,7 +129,7 @@ namespace std {
 	{
 		size_t operator()(const Position& p) const
 		{
-			return (std::hash<int>()(p.yPos) << 16) ^ std::hash<int>()(p.xPos);
+			return (hash<int>()(p.yPos) << 31) ^ hash<int>()(p.xPos);
 		}
 	};
 }
@@ -182,9 +184,9 @@ namespace Monster
 	inline array<Info, static_cast<size_t>(Type::Cnt)> InfoTable =
 	{
 		Info{ Type::Unknown, Behavior::Normal, -1, -1.0f, -1, -1.0f, -1.0f },
-		Info{ Type::Slime,   Behavior::Normal, 1,  100.0f, 10, 1.0f,  0.8f },
-		Info{ Type::Goblin,  Behavior::Agro,   10, 200.0f, 20, 1.0f,  1.2f },
-		Info{ Type::Orc,     Behavior::Agro,   20, 300.0f, 30, 2.0f,  1.0f }
+		Info{ Type::Slime,   Behavior::Normal, 1,  100.0f, 1, 1.0f,  0.8f },
+		Info{ Type::Goblin,  Behavior::Agro,   10, 200.0f, 2, 1.0f,  1.2f },
+		Info{ Type::Orc,     Behavior::Agro,   20, 300.0f, 5, 2.0f,  1.0f }
 	};
 }
 

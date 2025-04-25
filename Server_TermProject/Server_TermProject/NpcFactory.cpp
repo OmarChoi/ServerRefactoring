@@ -4,28 +4,30 @@
 #include "NpcSession.h"
 #include "NpcFactory.h"
 
-static array<function<NpcSession* ()>, static_cast<size_t>(Monster::Behavior::Cnt)> npcConstructors;
-
+std::array<function<std::shared_ptr<NpcSession>()>, static_cast<size_t>(Monster::Behavior::Cnt)> NpcFactory::npcConstructors;
 void NpcFactory::InitNpcFactory()
 {
-    NpcFactory::Register(Monster::Behavior::Normal, []() { return new NormalNpc(); });
-    NpcFactory::Register(Monster::Behavior::Agro, []() { return new AgroNpc(); });
+    Register(Monster::Behavior::Normal, [] { return std::make_shared<NormalNpc>(); });
+    Register(Monster::Behavior::Agro, [] { return std::make_shared<AgroNpc>(); });
 }
 
-void NpcFactory::Register(Monster::Behavior behavior, function<NpcSession*()> creator)
+void NpcFactory::Register(Monster::Behavior behavior, function<std::shared_ptr<NpcSession>()> creator)
 {
     npcConstructors[static_cast<size_t>(behavior)] = std::move(creator);
 }
 
-NpcSession* NpcFactory::CreateNpc(Monster::Type type)
+shared_ptr<NpcSession> NpcFactory::CreateNpc(Monster::Type type)
 {
-    int typeIdx = static_cast<int>(type);
-    NpcSession* npc = npcConstructors[static_cast<size_t>(Monster::InfoTable[typeIdx].behavior)]();
-    if (npc == nullptr) 
-    {
-        cout << "Error : Npc Constructer Doesn't Work\n";
-        return npc;
+    auto behavior = Monster::InfoTable[static_cast<int>(type)].behavior;
+    auto& ctor = npcConstructors[static_cast<size_t>(behavior)];
+
+    auto npc = ctor();  // shared_ptr<NpcSession>
+    if (!npc) {
+        std::cerr << "[NpcFactory] Constructor returned nullptr\n";
+        return nullptr;
     }
-    npc->SetInfo(typeIdx);
+
+    // SetInfo 의 인자는 int 이므로 캐스트
+    npc->SetInfo(static_cast<int>(type));
     return npc;
 }

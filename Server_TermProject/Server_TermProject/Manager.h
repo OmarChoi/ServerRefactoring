@@ -16,7 +16,7 @@ public:
 	Manager& operator=(const Manager&) = delete;
 
 private:
-	atomic_int				m_nCurrentPlayer;
+	int				m_nCurrentPlayer;
 
 private:
 	Manager();

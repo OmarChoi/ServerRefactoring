@@ -8,16 +8,6 @@
 
 GameManager::~GameManager()
 {
-	for (auto& p : m_ppPlayerSession)
-	{
-		delete p;
-		p = nullptr;
-	}
-	for (auto& p : m_ppNpcSession)
-	{
-		delete p;
-		p = nullptr;
-	}
 	delete m_mapSession;
 	m_mapSession = nullptr;
 }
@@ -30,8 +20,9 @@ void GameManager::Init()
 	// Init Player
     for (int i = 0; i < MAX_USER; ++i)
     {
-        m_ppPlayerSession[i] = new PlayerSession();
-        m_ppPlayerSession[i]->SetObjId(i);
+        auto p = make_shared<PlayerSession>();
+        p->SetObjId(i);
+        m_ppPlayerSession[i] = move(p);
     }
 
 	// Init Npc
@@ -69,7 +60,7 @@ void GameManager::Init()
             m_mapSession->ChangeSection(ObjectType::Npc, i, { -1, -1 }, { yPos, xPos });
         }
     }
-    std::cout << "Npc Object initialization complete.\n";
+    cout << "Npc Object initialization complete.\n";
 }
 
 void GameManager::AddPlayerSession(int playerId, string playerName, int yPos, int xPos,
@@ -79,7 +70,7 @@ void GameManager::AddPlayerSession(int playerId, string playerName, int yPos, in
 	{
 		cout << "Error : GameManager Init Error\n";
 		cout << "m_ppPlayerSession was not created properly.\n";
-		m_ppPlayerSession[playerId] = new PlayerSession();
+        m_ppPlayerSession[playerId] = make_shared<PlayerSession>();
 	}
 	m_ppPlayerSession[playerId]->SetObjId(playerId);
 	m_ppPlayerSession[playerId]->SetName(playerName);
@@ -90,14 +81,16 @@ void GameManager::AddPlayerSession(int playerId, string playerName, int yPos, in
 	m_ppPlayerSession[playerId]->SetLevel(level);
 }
 
-PlayerSession* GameManager::GetPlayerSession(int pId)
+shared_ptr<PlayerSession> GameManager::GetPlayerSession(int pId) const
 {
-    return (pId >= 0 && pId < MAX_USER) ? m_ppPlayerSession[pId] : nullptr;
+    if (pId < 0 || pId >= MAX_USER) return nullptr;
+    return m_ppPlayerSession[pId];
 }
 
-NpcSession* GameManager::GetNpcSession(int objId)
+shared_ptr<NpcSession> GameManager::GetNpcSession(int objId) const
 {
-    return (objId >= 0 && objId < MAX_NPC) ? m_ppNpcSession[objId] : nullptr;
+    if (objId < 0 || objId >= MAX_NPC) return nullptr;
+    return m_ppNpcSession[objId];
 }
 
 bool GameManager::CanGo(Position pos) const

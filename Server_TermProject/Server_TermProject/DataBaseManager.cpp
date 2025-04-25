@@ -59,7 +59,7 @@ void DataBaseManager::HandleDiagnosticRecord(SQLHANDLE hHandle, SQLSMALLINT hTyp
     }
 }
 
-bool DataBaseManager::GetUserData(WCHAR* userID, PlayerSession* pPlayer)
+bool DataBaseManager::GetUserData(WCHAR* userID, shared_ptr<PlayerSession> pPlayer)
 {
     SQLRETURN retcode;
 
@@ -118,7 +118,7 @@ bool DataBaseManager::GetUserData(WCHAR* userID, PlayerSession* pPlayer)
 bool DataBaseManager::UpdatePlayerData(WCHAR* userID, int objID)
 {
     Manager& manager = Manager::GetInstance();
-    PlayerSession* player = manager.GetGameManager()->GetPlayerSession(objID);
+    auto player = manager.GetGameManager()->GetPlayerSession(objID);
     if (player == nullptr) return false;
     SQLRETURN retcode;
     SQLWCHAR szName[20];

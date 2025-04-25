@@ -11,4 +11,8 @@ public:
 public:
 	void AddTimer(int objId, chrono::system_clock::time_point timerPoint, TIMER_TYPE timerEvent);
 	void ProcessTimer();
+
+private:
+	chrono::time_point<chrono::system_clock> lastLogTime;
+	void PrintTimerWork();
 };

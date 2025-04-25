@@ -9,7 +9,7 @@ protected:
 	float				m_speed;
 	int                 m_attackRange;
 	int                 m_damage;
-	Position			m_pos;
+	atomic<Position>	m_pos;
 
 	atomic_bool			m_bActive;
 
@@ -25,7 +25,7 @@ public:
 
 	virtual void SetPos(int y, int x);
 	virtual void SetPos(Position pos) { SetPos(pos.yPos, pos.xPos); }
-	Position GetPos() const { return m_pos; }
+	Position GetPos() const { return m_pos.load(); }
 
 	void SetObjId(int i) { m_objectID = i; }
 
@@ -50,7 +50,7 @@ public:
 	virtual void AddViewList(int objID);
 	virtual void RemoveViewList(int objID);
 
-	virtual bool CanSee(const Creature* other);
+	virtual bool CanSee(const shared_ptr<Creature>& other) const;
 public:
 	virtual void RespawnObject();
 	virtual void ApplyDamage(int damage, int objId = -1);

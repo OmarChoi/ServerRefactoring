@@ -16,7 +16,7 @@ private:
 	void HandleDiagnosticRecord(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE RetCode);
 
 public:
-	bool GetUserData(WCHAR* userID, PlayerSession* pPlayer);
+	bool GetUserData(WCHAR* userID, shared_ptr<PlayerSession> pPlayer);
 	bool UpdatePlayerData(WCHAR* userID, int objID);
 	void SetHandle();
 };

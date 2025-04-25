@@ -1,9 +1,12 @@
 #include "stdafx.h"
 #include "Creature.h"
 
-Creature::Creature() : m_pos(-1, -1), m_hp(0.0f), m_maxHp(0.0f), m_objectID(-1), 
-m_damage(100), m_bActive(false), m_attackRange(1), m_speed(1.0), m_level(1),
-m_lastMoveTime(std::chrono::high_resolution_clock::now()), m_lastAttackTime(std::chrono::high_resolution_clock::now())
+Creature::Creature() : 
+	m_pos{ Position{-1, -1} }, m_hp{ 0.0f }, m_maxHp{ 0.0f }, 
+	m_objectID{ -1 }, m_damage{ 100 }, m_bActive{ false },
+	m_attackRange{ 1 }, m_speed{ 1.0 }, m_level{ 1 },
+	m_lastMoveTime{ std::chrono::high_resolution_clock::now() }, 
+	m_lastAttackTime{ std::chrono::high_resolution_clock::now() }
 {
 }
 
@@ -27,7 +30,7 @@ void Creature::SetPos(int y, int x)
 	}
 	m_lastMoveTime = chrono::high_resolution_clock::now();
 	
-	m_pos.yPos = y; m_pos.xPos = x;
+	m_pos.store({ y, x });
 }
 
 void Creature::AddViewList(int objID)
@@ -45,10 +48,11 @@ void Creature::RemoveViewList(int objID)
 	m_viewListLock.unlock();
 }
 
-bool Creature::CanSee(const Creature* other)
+bool Creature::CanSee(const shared_ptr<Creature>& other) const
 {
-	if (abs(other->GetPos().xPos - m_pos.xPos) > VIEW_RANGE) return false;
-	return abs(other->GetPos().yPos - m_pos.yPos) < VIEW_RANGE;
+	Position pos = GetPos();
+	if (abs(other->GetPos().xPos - pos.xPos) > VIEW_RANGE) return false;
+	return abs(other->GetPos().yPos - pos.yPos) < VIEW_RANGE;
 }
 
 bool Creature::IsActive()
@@ -58,12 +62,6 @@ bool Creature::IsActive()
 
 void Creature::SetActive(bool active)
 {
-	// 초기화하는 경우 체력을 정상적으로 설정해주고 활성화 함수 호출.
-	if (m_hp < FLT_EPSILON && active == true)
-	{
-		m_hp = m_maxHp;
-		return;
-	}
 	m_bActive = active;
 }
 

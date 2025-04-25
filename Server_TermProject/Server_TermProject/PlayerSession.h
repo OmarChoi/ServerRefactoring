@@ -13,7 +13,7 @@ private:
 	mutex							m_stateLock;
 	PlayerSocketHandler*			m_pNetwork;
 public:
-	PlayerSession() {};
+	PlayerSession() : Creature() {};
 	~PlayerSession();
 
 	void SetExp(int exp) { m_exp = exp; }
@@ -27,10 +27,13 @@ public:
 	PlayerState GetState();
 	bool HasStatChanged() const { return m_statChanged; }
 
+	bool IsInGame();
+public:
 	void Attack();
 	void ApplyDamage(int damage, int objId = -1) override;
 	void AddExp(int exp);
 	void Die() override;
+	void RespawnObject() override;
 public:
 	void Init(PlayerSocketHandler* socket);
 
@@ -41,7 +44,6 @@ public:
 	void UpdatePlayerViewList();
 	void UpdateNpcViewList();
 	void LogOut();
-
 private:
 	void UpdateDBInfo();
 

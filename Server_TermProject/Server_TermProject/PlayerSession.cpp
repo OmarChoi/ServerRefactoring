@@ -12,8 +12,10 @@ extern Timer g_Timer;
 
 PlayerSession::~PlayerSession()
 {
-	lock_guard<mutex> lock(m_npcViewListLock);
-	m_npcViewList.clear();
+	{
+		lock_guard<mutex> lock(m_npcViewListLock);
+		m_npcViewList.clear();
+	}
 }
 
 void PlayerSession::SetPos(int y, int x)
@@ -30,8 +32,8 @@ void PlayerSession::SetRandomPos()
 	int yPos, xPos;
 	do
 	{
-		std::uniform_int_distribution<int> distX(0, W_WIDTH - 1);
-		std::uniform_int_distribution<int> distY(0, W_HEIGHT - 1);
+		uniform_int_distribution<int> distX(0, W_WIDTH - 1);
+		uniform_int_distribution<int> distY(0, W_HEIGHT - 1);
 		yPos = distY(rng);
 		xPos = distX(rng);
 	} while (manager.GetGameManager()->CanGo(yPos, xPos) == false);
@@ -56,11 +58,19 @@ PlayerState PlayerSession::GetState()
 	return st;
 }
 
+bool PlayerSession::IsInGame()
+{
+	PlayerState currState = GetState();
+	if (currState != PlayerState::CT_INGAME)
+		return false;
+	return true;
+}
+
 void PlayerSession::Attack()
 {
-	std::chrono::time_point attackTime = std::chrono::high_resolution_clock::now();
+	chrono::time_point attackTime = chrono::high_resolution_clock::now();
 	auto duration = attackTime - m_lastAttackTime;
-	auto durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+	auto durationMs = chrono::duration_cast<chrono::milliseconds>(duration);
 	if (durationMs < 1000ms) return;
 	m_lastAttackTime = attackTime;
 	GameManager* gameManager = Manager::GetInstance().GetGameManager();
@@ -70,7 +80,7 @@ void PlayerSession::Attack()
 
 	for (auto it : nearNpc)
 	{
-		NpcSession* npc = gameManager->GetNpcSession(it);
+		auto npc = gameManager->GetNpcSession(it);
 		if (Utils::GetDist(npc->GetPos(), m_pos) <= 1)
 		{
 			npc->ApplyDamage(m_damage);
@@ -106,8 +116,16 @@ void PlayerSession::Die()
 	m_exp = std::max(0, m_exp - penalty);
 	
 	// N초 후 부활 타이머에 삽입
+	if (IsInGame() == false) return;
 	g_Timer.AddTimer(m_objectID, chrono::system_clock::now() + 5s, TIMER_TYPE::RespawnObject);
 }
+
+void PlayerSession::RespawnObject()
+{
+	if (IsInGame() == false) return;
+	Creature::RespawnObject();
+}
+
 
 void PlayerSession::AddViewNPCList(int objID)
 {
@@ -127,7 +145,7 @@ void PlayerSession::RemoveViewNPCList(int objID)
 
 void PlayerSession::UpdateViewList()
 {
-	if (GetState() != PlayerState::CT_INGAME) return;
+	if (IsInGame() == false) return;
 	UpdatePlayerViewList();
 	UpdateNpcViewList();
 }
@@ -144,9 +162,9 @@ void PlayerSession::UpdatePlayerViewList()
 	for (int pId : nearUserList)
 	{
 		if (pId == m_objectID) continue;
-		PlayerSession* player = gameManager->GetPlayerSession(pId);
+		auto player = gameManager->GetPlayerSession(pId);
 		if (player == nullptr) continue;
-		if (player->GetState() != PlayerState::CT_INGAME) continue;
+		if (player->IsInGame() == false) continue;
 		PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(pId);
 		if (CanSee(player)) // 현재 내 시야 내에 있으면
 		{
@@ -155,7 +173,7 @@ void PlayerSession::UpdatePlayerViewList()
 				// 이전에는 내 시야에 없었으면 클라이언트에 추가 요청
 				player->AddViewList(m_objectID);
 				pNetwork->send_add_object_packet(this);
-				m_pNetwork->send_add_object_packet(player);
+				m_pNetwork->send_add_object_packet(player.get());
 			}
 			else
 				prevViewList.erase(pId);
@@ -169,7 +187,7 @@ void PlayerSession::UpdatePlayerViewList()
 				// 이전에는 있었는데 현재는 없으면
 				player->RemoveViewList(m_objectID);
 				pNetwork->send_remove_object_packet(this);
-				m_pNetwork->send_remove_object_packet(player);
+				m_pNetwork->send_remove_object_packet(player.get());
 				prevViewList.erase(pId);
 			}
 		}
@@ -178,19 +196,19 @@ void PlayerSession::UpdatePlayerViewList()
 	// 현재 같은 Section에 없는데 이전에는 시야에 있었을 때 ex) 로그아웃, Teleport 등
 	for (int pId : prevViewList)
 	{
-		PlayerSession* player = gameManager->GetPlayerSession(pId);
+		auto player = gameManager->GetPlayerSession(pId);
 		if (player == nullptr) continue;
-		if (player->GetState() == PlayerState::CT_INGAME)
+		if (player->IsInGame() == false)
 		{
 			PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(pId);
 			player->RemoveViewList(m_objectID);
 			pNetwork->send_remove_object_packet(this);
 		}
-		m_pNetwork->send_remove_object_packet(player);
+		m_pNetwork->send_remove_object_packet(player.get());
 	}
 
 	m_viewListLock.lock();
-	m_viewList = std::move(newViewList);
+	m_viewList = move(newViewList);
 	m_viewListLock.unlock();
 }
 
@@ -207,7 +225,7 @@ void PlayerSession::UpdateNpcViewList()
 
 	for (int nId : nearNpcList)
 	{
-		NpcSession* npc = gameManager->GetNpcSession(nId);
+		auto npc = gameManager->GetNpcSession(nId);
 		if (npc == nullptr) continue;
 		if (npc->GetHp() < FLT_EPSILON) continue;
 		if (CanSee(npc))
@@ -215,7 +233,7 @@ void PlayerSession::UpdateNpcViewList()
 			if (prevNpcViewList.find(nId) == prevNpcViewList.end())
 			{
 				npc->AddViewList(m_objectID);
-				m_pNetwork->send_add_npc_packet(npc);
+				m_pNetwork->send_add_npc_packet(npc.get());
 				prevNpcViewList.erase(nId);
 			}
 			newNpcViewList.emplace(nId);
@@ -225,7 +243,7 @@ void PlayerSession::UpdateNpcViewList()
 			if (prevNpcViewList.find(nId) != prevNpcViewList.end())
 			{
 				npc->RemoveViewList(m_objectID);
-				m_pNetwork->send_remove_npc_object_packet(npc);
+				m_pNetwork->send_remove_npc_object_packet(npc.get());
 				prevNpcViewList.erase(nId);
 			}
 		}
@@ -233,56 +251,45 @@ void PlayerSession::UpdateNpcViewList()
 
 	for (int nId : prevNpcViewList)
 	{
-		NpcSession* npc = gameManager->GetNpcSession(nId);
+		auto npc = gameManager->GetNpcSession(nId);
 		if (CanSee(npc)) continue;
 		npc->RemoveViewList(m_objectID);
-		m_pNetwork->send_remove_npc_object_packet(npc);
+		m_pNetwork->send_remove_npc_object_packet(npc.get());
 	}
 
 	m_npcViewListLock.lock();
-	m_npcViewList = std::move(newNpcViewList);
+	m_npcViewList = move(newNpcViewList);
 	m_npcViewListLock.unlock();
 }
 
 void PlayerSession::LogOut()
 {
 	GameManager* gameManager = Manager::GetInstance().GetGameManager();
-	// gameManager->GetMapSession()->DeleteCreature(ObjectType::Player, m_pos.yPos, m_pos.xPos, m_objectID);
 
 	// DataBase에 플레이어 정보 갱신
 	UpdateDBInfo();
 	
 	// PlayerSession 반환
 	SetState(PlayerState::CT_FREE);
-
-	if (m_pNetwork) m_pNetwork = nullptr;
-	{
-		lock_guard<mutex> lock(m_npcViewListLock);
-		for (int nId : m_npcViewList)
-		{
-			NpcSession* npc = gameManager->GetNpcSession(nId);
-			if (npc == nullptr) continue;
-			if (npc->GetHp() < FLT_EPSILON) continue;
-			npc->RemoveViewList(m_objectID);
-		}
-		m_npcViewList.clear();
-	}
+	SetActive(false);
+	gameManager->GetMapSession()->DeleteCreature(ObjectType::Player, m_objectID, GetPos());
 	{
 		lock_guard<mutex> lock(m_viewListLock);
-		for (int pId : m_viewList) 
+		for (int pId : m_viewList)
 		{
 			if (pId == m_objectID) continue;
-			PlayerSession* player = gameManager->GetPlayerSession(pId);
+			auto player = gameManager->GetPlayerSession(pId);
 			if (player == nullptr) continue;
-			if (player->GetState() != PlayerState::CT_INGAME) continue;
+			if (player->IsInGame() == false) continue;
 			PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(pId);
 			player->RemoveViewList(m_objectID);
-			m_pNetwork->send_remove_object_packet(this);
+			pNetwork->send_remove_object_packet(this);
 		}
 		m_viewList.clear();
 	}
 
-	gameManager->RemovePlayerSession(m_objectID);
+	if (m_pNetwork) 
+		m_pNetwork = nullptr;
 }
 
 void PlayerSession::UpdateDBInfo()
