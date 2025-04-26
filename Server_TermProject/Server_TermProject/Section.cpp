@@ -3,12 +3,13 @@
 
 void Section::GetPlayerList(unordered_set<int>& playerList)
 {
-	// Section에 유저 삽입 시 Lock을 설정하기 때문에 Lock X
+	lock_guard<mutex> lock(playerListLock);
 	playerList.insert(m_playerList.begin(), m_playerList.end());
 }
 
 void Section::GetNpcList(unordered_set<int>& npcList)
 {
+	lock_guard<mutex> lock(npcListLock);
 	npcList.insert(m_npcList.begin(), m_npcList.end());
 }
 
