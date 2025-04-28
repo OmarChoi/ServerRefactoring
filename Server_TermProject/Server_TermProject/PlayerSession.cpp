@@ -198,7 +198,7 @@ void PlayerSession::UpdatePlayerViewList()
 	{
 		auto player = gameManager->GetPlayerSession(pId);
 		if (player == nullptr) continue;
-		if (player->IsInGame() == false)
+		if (player->IsInGame() == true)
 		{
 			PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(pId);
 			player->RemoveViewList(m_objectID);

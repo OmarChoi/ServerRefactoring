@@ -129,7 +129,7 @@ void NpcSession::NpcSession::UpdateViewList()
 		// 이전에 Npc 시야에 있었는데 현재 인근 Section에 존재하지 않음
 		auto player = gameManager->GetPlayerSession(pId);
 		if (player == nullptr) continue;
-		if (player->IsInGame() == false)
+		if (player->IsInGame() == true)
 		{
 			PlayerSocketHandler* pNetwork = Manager::GetInstance().GetNetworkManager()->GetPlayerNetwork(pId);
 			player->RemoveViewNPCList(m_objectID);
@@ -285,8 +285,7 @@ void NpcSession::CreatePath()
 	Position targetPos = target->GetPos();
 	Position startPos = GetPos();
 	int dist = Utils::GetDist(startPos, targetPos);
-	if (gameManager->GetMapSession()->CanGo(targetPos) == false ||
-		dist > VIEW_RANGE)
+	if (gameManager->CanGo(targetPos) == false || dist > VIEW_RANGE)
 	{
 		ReleaseTarget();
 		return;
