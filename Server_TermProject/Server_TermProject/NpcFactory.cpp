@@ -21,13 +21,13 @@ shared_ptr<NpcSession> NpcFactory::CreateNpc(Monster::Type type)
     auto behavior = Monster::InfoTable[static_cast<int>(type)].behavior;
     auto& ctor = npcConstructors[static_cast<size_t>(behavior)];
 
-    auto npc = ctor();  // shared_ptr<NpcSession>
-    if (!npc) {
+    auto npc = ctor();
+    if (!npc)
+    {
         std::cerr << "[NpcFactory] Constructor returned nullptr\n";
         return nullptr;
     }
 
-    // SetInfo 의 인자는 int 이므로 캐스트
     npc->SetInfo(static_cast<int>(type));
     return npc;
 }

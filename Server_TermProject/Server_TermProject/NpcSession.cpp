@@ -26,12 +26,8 @@ NpcSession::NpcSession()
 	m_registUpdate{ false }
 {
 	m_currentState.store(Monster::State::Idle);
-
-	stateFunc[static_cast<size_t>(Monster::State::Idle)] = [this]() { Roaming(); };
-	stateFunc[static_cast<size_t>(Monster::State::Roaming)] = [this]() { Roaming(); };
-	stateFunc[static_cast<size_t>(Monster::State::Attack)] = [this]() { Attack(); };
-	stateFunc[static_cast<size_t>(Monster::State::Chase)] = [this]() { ChaseTarget(); };
-	stateFunc[static_cast<size_t>(Monster::State::Die)] = [this]() { Die(); };
+	BindStateFunctions();
+	BindStateTransitions();
 }
 
 NpcSession::~NpcSession()
@@ -39,6 +35,41 @@ NpcSession::~NpcSession()
 	lock_guard<mutex> lock(m_pathLock);
 	while (!m_path.empty())
 		m_path.pop();
+}
+
+void NpcSession::BindStateFunctions()
+{
+	stateFunc[static_cast<size_t>(Monster::State::Idle)] = [this]() { Roaming(); };
+	stateFunc[static_cast<size_t>(Monster::State::Roaming)] = [this]() { Roaming(); };
+	stateFunc[static_cast<size_t>(Monster::State::Attack)] = [this]() { Attack(); };
+	stateFunc[static_cast<size_t>(Monster::State::Chase)] = [this]() { ChaseTarget(); };
+	stateFunc[static_cast<size_t>(Monster::State::Die)] = [this]() { Die(); };
+}
+
+void NpcSession::BindStateTransitions()
+{
+	stateTransitionFunc[static_cast<size_t>(Monster::State::Idle)] = [this](bool hasTarget, int distance) {
+		m_currentState.store(Monster::State::Roaming, std::memory_order_relaxed);
+	};
+
+	stateTransitionFunc[static_cast<size_t>(Monster::State::Roaming)] = [this](bool hasTarget, int distance) {
+		if (hasTarget)
+			m_currentState.store(Monster::State::Chase, std::memory_order_relaxed);
+	};
+
+	stateTransitionFunc[static_cast<size_t>(Monster::State::Chase)] = [this](bool hasTarget, int distance) {
+		if (!hasTarget)
+			m_currentState.store(Monster::State::Roaming, std::memory_order_relaxed);
+		else if (distance <= m_attackRange)
+			m_currentState.store(Monster::State::Attack, std::memory_order_relaxed);
+	};
+
+	stateTransitionFunc[static_cast<size_t>(Monster::State::Attack)] = [this](bool hasTarget, int distance) {
+		if (!hasTarget)
+			m_currentState.store(Monster::State::Roaming, std::memory_order_relaxed);
+		else if (distance > m_attackRange)
+			m_currentState.store(Monster::State::Chase, std::memory_order_relaxed);
+	};
 }
 
 void NpcSession::AddViewList(int objID)
@@ -214,15 +245,19 @@ void NpcSession::Update()
 	Monster::State currState = m_currentState.load(memory_order_relaxed);
 
 	size_t index = static_cast<size_t>(currState);
-	if (index < stateFunc.size())
-		stateFunc[index]();
+	if (index >= stateFunc.size())
+	{
+		lock_guard<mutex> lock(PrintLock);
+		cout << "State Index Error in NpcSession::Update()  : CurrState is " << index << "\n";
+		return;
+	}
+	stateFunc[index]();
 
 	if (!m_registUpdate.exchange(true, std::memory_order_acq_rel)) 
 	{
 		g_Timer.AddTimer(m_objectID, chrono::system_clock::now() + 1s, TIMER_TYPE::NpcUpdate);
 	}
 }
-
 void NpcSession::ChangeState()
 {
 	bool hasTarget = CheckTarget();
@@ -241,30 +276,15 @@ void NpcSession::ChangeState()
 	}
 
 	Monster::State state = m_currentState.load(memory_order_relaxed);
-	switch (state) 
+	size_t index = static_cast<size_t>(state);
+	auto start = std::chrono::high_resolution_clock::now();
+	if (index >= stateTransitionFunc.size())
 	{
-	case Monster::State::Idle:
-		m_currentState.store(Monster::State::Roaming);
-		break;
-	case Monster::State::Roaming:
-		if (hasTarget)
-			m_currentState.store(Monster::State::Chase);
-		break;
-	case Monster::State::Chase:
-		if (!hasTarget)
-			m_currentState.store(Monster::State::Roaming);
-		else if (distance <= m_attackRange)
-			m_currentState.store(Monster::State::Attack);
-		break;
-	case Monster::State::Attack:
-		if (!hasTarget)
-			m_currentState.store(Monster::State::Roaming);
-		else if (distance > m_attackRange)
-			m_currentState.store(Monster::State::Chase);
-		break;
-	default:
-		break;
+		lock_guard<mutex> lock(PrintLock);
+		cout << "State Index Error in NpcSession::ChangeState() : CurrState is " << index << "\n";
+		return;
 	}
+	stateTransitionFunc[index](hasTarget, distance);
 }
 
 void NpcSession::Attack()

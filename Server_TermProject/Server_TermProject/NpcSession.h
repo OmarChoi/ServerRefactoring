@@ -20,11 +20,15 @@ private:
     atomic_bool                         m_registUpdate;
 private:
     array<function<void()>, static_cast<size_t>(Monster::State::Cnt)> stateFunc;
+    array<function<void(bool hasTarget, int distance)>, 
+        static_cast<size_t>(Monster::State::Cnt)> stateTransitionFunc;
 
 public:
     NpcSession();
     virtual ~NpcSession();
 
+    void BindStateFunctions();
+    void BindStateTransitions();
 public:
     void AddViewList(int objID) override;
     void RemoveViewList(int objID) override;
